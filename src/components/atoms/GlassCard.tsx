@@ -37,7 +37,7 @@ export function GlassCard({
 }: GlassCardProps) {
   const glassClass = variant === "accent" ? "glass-card-accent" : "glass-card";
 
-  const classes = [glassClass, "p-4", className].filter(Boolean).join(" ");
+  const classes = [glassClass, className].filter(Boolean).join(" ");
 
   return (
     <motion.div

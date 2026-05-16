@@ -38,7 +38,7 @@ export function KpiCard({
 }: KpiCardProps) {
   return (
     <GlassCard
-      className="flex flex-col gap-2 min-w-0 flex-1"
+      className="flex flex-col gap-2 min-w-0 flex-1 p-4"
       variants={fadeUp}
     >
       <div className="flex items-center gap-2">

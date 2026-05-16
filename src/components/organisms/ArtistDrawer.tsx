@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { slideInRight } from "@/lib/motion";
 import { X } from "@phosphor-icons/react";
 import { Text, Badge, Divider, AnimatedCounter } from "@/components/atoms";
+import { ProvinceRankChart } from "@/components/molecules";
 
 /**
  * ArtistDrawer — Slide-over detail panel organism
@@ -113,14 +114,10 @@ export function ArtistDrawer({ artist, onClose }: ArtistDrawerProps) {
 
               <Divider spacing="sm" />
 
-              {/* Province context placeholder */}
+              {/* Province context */}
               <div className="flex flex-col gap-2">
-                <Text variant="caption" color="secondary">Province Overview</Text>
-                <div className="glass-card p-4 flex items-center justify-center h-32">
-                  <Text variant="label" color="muted">
-                    Chart will render here
-                  </Text>
-                </div>
+                <Text variant="caption" color="secondary">Province Rank (by Artist Count)</Text>
+                <ProvinceRankChart activeProvince={artist.province} />
               </div>
             </div>
           </motion.aside>
