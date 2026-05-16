@@ -1,26 +1,101 @@
 @import "tailwindcss";
 
+/* ============================================
+   DESIGN TOKENS — Analisis Spasial Musik Indonesia
+   Canonical source: DESIGN_GUIDELINES.md §2
+   ============================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #080C0F;
+  --foreground: #F0F6FC;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Legacy compat */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* === BACKGROUNDS === */
+  --color-bg-canvas:       #080C0F;
+  --color-bg-sidebar:      #0D1117;
+  --color-bg-card:         #111820;
+  --color-bg-drawer:       #0F1923;
+  --color-bg-surface:      #1A2535;
+
+  /* === TEAL ACCENT — "Archipelago Teal" === */
+  --color-accent-500:      #14B8A6;
+  --color-accent-400:      #2DD4BF;
+  --color-accent-600:      #0D9488;
+  --color-accent-glow:     rgba(20, 184, 166, 0.15);
+
+  /* === TEXT === */
+  --color-text-primary:    #F0F6FC;
+  --color-text-secondary:  #8B949E;
+  --color-text-muted:      #3D4F61;
+  --color-text-accent:     #14B8A6;
+
+  /* === BORDERS === */
+  --color-border-default:  rgba(255, 255, 255, 0.07);
+  --color-border-accent:   rgba(20, 184, 166, 0.30);
+
+  /* === DATA VIZ PALETTE === */
+  --color-data-1:          #14B8A6;
+  --color-data-2:          #38BDF8;
+  --color-data-3:          #818CF8;
+  --color-data-4:          #FB923C;
+  --color-data-5:          #A3E635;
+
+  /* === SEMANTIC === */
+  --color-success:         #22C55E;
+  --color-warning:         #F59E0B;
+  --color-error:           #EF4444;
+  --color-info:            #38BDF8;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================
+   GLASSMORPHISM UTILITIES
+   ============================================ */
+
+.glass-card {
+  background: rgba(17, 24, 32, 0.60);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border-default);
+  border-radius: 12px;
 }
+
+.glass-card-accent {
+  background: rgba(17, 24, 32, 0.60);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border-accent);
+  border-radius: 12px;
+  box-shadow: 0 0 24px var(--color-accent-glow);
+}
+
+/* ============================================
+   TYPE SCALE UTILITIES — DESIGN_GUIDELINES.md §3
+   ============================================ */
+
+@layer utilities {
+  .text-hero    { font-size: 2.5rem;    font-weight: 700; line-height: 1.2; }
+  .text-title   { font-size: 1.5rem;    font-weight: 600; line-height: 1.3; }
+  .text-heading { font-size: 1.125rem;  font-weight: 600; line-height: 1.4; }
+  .text-body    { font-size: 0.9375rem; font-weight: 400; line-height: 1.6; }
+  .text-label   { font-size: 0.8125rem; font-weight: 500; line-height: 1.4; }
+  .text-caption { font-size: 0.6875rem; font-weight: 400; line-height: 1.4; }
+}
+
+/* ============================================
+   BASE BODY STYLES
+   ============================================ */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg-canvas);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
