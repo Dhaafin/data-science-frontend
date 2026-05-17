@@ -88,7 +88,7 @@ export const musicService = {
       if (isRegion) {
         filters.push(`origin_province=ilike.${f}`);
       } else {
-        filters.push(`genre::text=ilike.${f}`);
+        filters.push(`genre=cs.{${filter.toLowerCase()}}`);
       }
     }
 
