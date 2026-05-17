@@ -10,7 +10,6 @@ import {
   DatabaseExplorer,
   GenreDeepDive,
   ComparativeView,
-  AboutView,
   Drawer,
 } from "@/components/organisms";
 import type { ArtistData } from "@/components/organisms";
@@ -100,11 +99,6 @@ export default function Home() {
         {/* Section 3: Regional Comparative Analytics */}
         <section id="comparative" className="scroll-mt-20">
           <ComparativeView />
-        </section>
-
-        {/* Section 4: Research Methodology & About */}
-        <section id="about" className="scroll-mt-20">
-          <AboutView />
         </section>
       </main>
 
