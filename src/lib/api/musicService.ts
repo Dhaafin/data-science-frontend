@@ -9,7 +9,7 @@ export interface DatabaseArtist {
   profile_picture: string;
   artist_name: string;
   origin_city: string;
-  province: string;
+  origin_province: string;
   popularity: number;
   followers: number;
   genre: string[];
@@ -23,7 +23,7 @@ export function mapDbToArtistData(dbArtist: DatabaseArtist): ArtistData {
     name: dbArtist.artist_name,
     profilePicture: dbArtist.profile_picture,
     originCity: dbArtist.origin_city,
-    province: dbArtist.province,
+    province: dbArtist.origin_province,
     popularity: dbArtist.popularity,
     followers: dbArtist.followers,
     genres: dbArtist.genre || [],

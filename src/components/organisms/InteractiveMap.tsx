@@ -24,7 +24,7 @@ interface CityAggregate {
   totalPopularity: number;
   avgPopularity: number;
   totalFollowers: number;
-  topArtists: { name: string; popularity: number }[];
+  topArtists: ArtistData[];
   coordinates: [number, number];
 }
 
@@ -32,7 +32,6 @@ interface MapProps {
   onArtistClick?: (artist: ArtistData) => void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function InteractiveMap({ onArtistClick }: MapProps) {
   const [geoJsonData, setGeoJsonData] = useState<GeoJsonObject | null>(null);
   const [cityData, setCityData] = useState<CityAggregate[]>([]);
@@ -49,16 +48,18 @@ export default function InteractiveMap({ onArtistClick }: MapProps) {
         const geoJson = (await geoResponse.json()) as GeoJsonObject;
 
         // 2. Fetch all required map data from Supabase via our Axios client
-        // Selecting only required columns to keep payload minimal (~15KB)
+        // Selecting full columns to support the ArtistDrawer drilldown payload (~25KB)
         const { supabaseApi } = await import("@/lib/api/client");
+        const { mapDbToArtistData } = await import("@/lib/api/musicService");
         const dbResponse = await supabaseApi.get(
-          "/music_data?select=artist_name,origin_city,popularity,followers,genre&is_indonesian=eq.true"
+          "/music_data?select=id,profile_picture,artist_name,origin_city,origin_province,popularity,followers,genre&is_indonesian=eq.true"
         );
 
         // 3. Aggregate data by City
         const cityMap = new Map<string, CityAggregate>();
         
-        dbResponse.data.forEach((row: { artist_name: string; origin_city: string; popularity: number; followers: number; genre: string[] }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        dbResponse.data.forEach((row: any) => {
           const city = row.origin_city;
           // Skip if city is null or we don't have its centroid configured
           if (!city || !cityCentroids[city]) return;
@@ -69,7 +70,7 @@ export default function InteractiveMap({ onArtistClick }: MapProps) {
             totalPopularity: 0,
             avgPopularity: 0,
             totalFollowers: 0,
-            topArtists: [] as { name: string; popularity: number }[],
+            topArtists: [] as ArtistData[],
             coordinates: cityCentroids[city],
           };
 
@@ -77,8 +78,9 @@ export default function InteractiveMap({ onArtistClick }: MapProps) {
           existing.totalPopularity += row.popularity || 0;
           existing.totalFollowers += row.followers || 0;
           
-          // Keep a small list of top artists for the popup
-          existing.topArtists.push({ name: row.artist_name, popularity: row.popularity || 0 });
+          // Map to ArtistData and keep a small list of top artists for the popup
+          const artistData = mapDbToArtistData(row);
+          existing.topArtists.push(artistData);
           existing.topArtists.sort((a, b) => b.popularity - a.popularity);
           existing.topArtists = existing.topArtists.slice(0, 3); // top 3
 
@@ -197,10 +199,22 @@ export default function InteractiveMap({ onArtistClick }: MapProps) {
                   <div className="flex flex-col gap-1 mt-2">
                     <Text variant="caption" color="muted">Top Artists:</Text>
                     {city.topArtists.map(a => (
-                      <div key={a.name} className="flex justify-between text-xs">
-                        <span className="text-white/80 truncate max-w-[120px]">{a.name}</span>
-                        <span className="text-(--color-accent-500)">{a.popularity}</span>
-                      </div>
+                      <button
+                        key={a.name}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.nativeEvent.stopPropagation();
+                          if (onArtistClick) onArtistClick(a);
+                        }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          e.nativeEvent.stopPropagation();
+                        }}
+                        className="flex justify-between text-xs text-left w-full hover:bg-white/10 px-2 py-1 -mx-2 rounded transition-colors group cursor-pointer"
+                      >
+                        <span className="text-white/80 group-hover:text-(--color-accent-400) truncate max-w-[120px]">{a.name}</span>
+                        <span className="text-(--color-accent-500) font-medium">{a.popularity}</span>
+                      </button>
                     ))}
                   </div>
                 </div>
