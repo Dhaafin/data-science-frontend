@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Text, Badge } from "@/components/atoms";
 import { cityCentroids } from "@/lib/config/cityCentroids";
-import { musicService, GenreEntry } from "@/lib/api/musicService";
 import type { ArtistData } from "@/components/organisms/ArtistDrawer";
+import type { GeoJsonObject } from "geojson";
 
 // Fix Leaflet marker icons issue in Next.js
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -31,8 +32,9 @@ interface MapProps {
   onArtistClick?: (artist: ArtistData) => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function InteractiveMap({ onArtistClick }: MapProps) {
-  const [geoJsonData, setGeoJsonData] = useState<any>(null);
+  const [geoJsonData, setGeoJsonData] = useState<GeoJsonObject | null>(null);
   const [cityData, setCityData] = useState<CityAggregate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -44,11 +46,11 @@ export default function InteractiveMap({ onArtistClick }: MapProps) {
       try {
         // 1. Fetch lightweight GeoJSON
         const geoResponse = await fetch("/indonesiaProvinces.json");
-        const geoJson = await geoResponse.json();
+        const geoJson = (await geoResponse.json()) as GeoJsonObject;
 
         // 2. Fetch all required map data from Supabase via our Axios client
         // Selecting only required columns to keep payload minimal (~15KB)
-        const { default: supabaseApi } = await import("@/lib/api/client");
+        const { supabaseApi } = await import("@/lib/api/client");
         const dbResponse = await supabaseApi.get(
           "/music_data?select=artist_name,origin_city,popularity,followers,genre&is_indonesian=eq.true"
         );
@@ -56,7 +58,7 @@ export default function InteractiveMap({ onArtistClick }: MapProps) {
         // 3. Aggregate data by City
         const cityMap = new Map<string, CityAggregate>();
         
-        dbResponse.data.forEach((row: any) => {
+        dbResponse.data.forEach((row: { artist_name: string; origin_city: string; popularity: number; followers: number; genre: string[] }) => {
           const city = row.origin_city;
           // Skip if city is null or we don't have its centroid configured
           if (!city || !cityCentroids[city]) return;
@@ -67,7 +69,7 @@ export default function InteractiveMap({ onArtistClick }: MapProps) {
             totalPopularity: 0,
             avgPopularity: 0,
             totalFollowers: 0,
-            topArtists: [],
+            topArtists: [] as { name: string; popularity: number }[],
             coordinates: cityCentroids[city],
           };
 
@@ -197,7 +199,7 @@ export default function InteractiveMap({ onArtistClick }: MapProps) {
                     {city.topArtists.map(a => (
                       <div key={a.name} className="flex justify-between text-xs">
                         <span className="text-white/80 truncate max-w-[120px]">{a.name}</span>
-                        <span className="text-[var(--color-accent-500)]">{a.popularity}</span>
+                        <span className="text-(--color-accent-500)">{a.popularity}</span>
                       </div>
                     ))}
                   </div>
