@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON, CircleMarker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Text, Badge } from "@/components/atoms";
@@ -18,7 +18,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-interface CityAggregate {
+export interface CityAggregate {
   city: string;
   count: number;
   totalPopularity: number;
@@ -30,9 +30,10 @@ interface CityAggregate {
 
 interface MapProps {
   onArtistClick?: (artist: ArtistData) => void;
+  onCityClick?: (city: CityAggregate) => void;
 }
 
-export default function InteractiveMap({ onArtistClick }: MapProps) {
+export default function InteractiveMap({ onArtistClick, onCityClick }: MapProps) {
   const [geoJsonData, setGeoJsonData] = useState<GeoJsonObject | null>(null);
   const [cityData, setCityData] = useState<CityAggregate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -183,43 +184,12 @@ export default function InteractiveMap({ onArtistClick }: MapProps) {
                 fillOpacity: 0.6,
                 weight: 2,
               }}
-            >
-              <Popup className="custom-popup">
-                <div className="flex flex-col gap-2 p-1 min-w-[180px]">
-                  <div className="flex justify-between items-center border-b border-white/10 pb-2">
-                    <Text variant="label" color="primary">{city.city}</Text>
-                    <Badge color="accent">{city.count} Artists</Badge>
-                  </div>
-                  
-                  <div className="flex justify-between mt-1">
-                    <Text variant="caption" color="secondary">Avg Pop:</Text>
-                    <Text as="span" variant="label" color="primary">{city.avgPopularity}</Text>
-                  </div>
-
-                  <div className="flex flex-col gap-1 mt-2">
-                    <Text variant="caption" color="muted">Top Artists:</Text>
-                    {city.topArtists.map(a => (
-                      <button
-                        key={a.name}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.nativeEvent.stopPropagation();
-                          if (onArtistClick) onArtistClick(a);
-                        }}
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          e.nativeEvent.stopPropagation();
-                        }}
-                        className="flex justify-between text-xs text-left w-full hover:bg-white/10 px-2 py-1 -mx-2 rounded transition-colors group cursor-pointer"
-                      >
-                        <span className="text-white/80 group-hover:text-(--color-accent-400) truncate max-w-[120px]">{a.name}</span>
-                        <span className="text-(--color-accent-500) font-medium">{a.popularity}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </Popup>
-            </CircleMarker>
+              eventHandlers={{
+                click: () => {
+                  if (onCityClick) onCityClick(city);
+                }
+              }}
+            />
           );
         })}
       </MapContainer>

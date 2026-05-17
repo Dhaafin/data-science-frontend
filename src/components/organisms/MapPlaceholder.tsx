@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { fadeUp } from "@/lib/motion";
 import { Spinner } from "@phosphor-icons/react";
 import type { ArtistData } from "@/components/organisms/ArtistDrawer";
+import type { CityAggregate } from "./InteractiveMap";
 
 /**
  * MapPlaceholder (Now Interactive Map Wrapper)
@@ -31,9 +32,10 @@ const InteractiveMap = dynamic(
 
 interface MapWrapperProps {
   onArtistClick: (artist: ArtistData) => void;
+  onCityClick?: (city: CityAggregate) => void;
 }
 
-export function MapPlaceholder({ onArtistClick }: MapWrapperProps) {
+export function MapPlaceholder({ onArtistClick, onCityClick }: MapWrapperProps) {
   return (
     <motion.div
       className="relative w-full h-full overflow-hidden rounded-lg bg-(--color-bg-surface)/20 border border-(--color-border-default)"
@@ -54,7 +56,7 @@ export function MapPlaceholder({ onArtistClick }: MapWrapperProps) {
       />
       
       {/* Live React Leaflet Map */}
-      <InteractiveMap onArtistClick={onArtistClick} />
+      <InteractiveMap onArtistClick={onArtistClick} onCityClick={onCityClick} />
     </motion.div>
   );
 }
