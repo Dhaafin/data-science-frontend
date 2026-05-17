@@ -49,6 +49,77 @@ function extractCount(header?: string): number {
 }
 
 /**
+ * Helper to map a parent filter genre to a list of common sub-genres
+ * found in Spotify/indonesian music datasets to allow broad overlap matching.
+ */
+function getGenreOverlapList(parentGenre: string): string[] {
+  const g = parentGenre.toLowerCase();
+  switch (g) {
+    case "pop":
+      return [
+        "pop",
+        "indonesian pop",
+        "indie pop",
+        "pop rock",
+        "pop melayu",
+        "sunda pop",
+        "javanese pop",
+        "pop sunda",
+        "pop jawa",
+        "folk pop",
+        "acoustic pop",
+        "alternative pop",
+      ];
+    case "indie":
+      return [
+        "indie",
+        "indie pop",
+        "indonesian indie",
+        "indie rock",
+        "indie folk",
+        "indonesian indie pop",
+        "indie soul",
+      ];
+    case "rock":
+      return [
+        "rock",
+        "indonesian rock",
+        "alternative rock",
+        "pop rock",
+        "indie rock",
+        "hard rock",
+        "metal",
+        "punk",
+        "grunge",
+        "indonesian punk",
+        "indonesian rockabilly",
+      ];
+    case "dangdut":
+      return ["dangdut", "dangdut koplo", "koplo", "dangdut campursari"];
+    case "jazz":
+      return ["jazz", "indonesian jazz", "fusion jazz", "indonesian jazz pop"];
+    case "folk":
+      return ["folk", "indie folk", "indonesian folk", "folk pop", "acoustic folk"];
+    case "metal":
+      return ["metal", "metalcore", "deathcore", "thrash metal", "indonesian metal", "heavy metal"];
+    case "hip hop":
+      return ["hip hop", "indonesian hip hop", "rap", "indonesian rap"];
+    case "r&b":
+      return ["r&b", "indonesian r&b", "soul", "neo-soul"];
+    case "electronic":
+      return ["electronic", "electronica", "house", "techno", "edm", "indonesian electronic"];
+    case "acoustic":
+      return ["acoustic", "acoustic pop", "acoustic folk"];
+    case "alternative":
+      return ["alternative", "alternative rock", "alternative pop", "indonesian alternative", "alternative metal"];
+    case "reggae":
+      return ["reggae", "indonesian reggae", "ska", "indonesian ska"];
+    default:
+      return [g];
+  }
+}
+
+/**
  * Data Service for querying Indonesian musicians.
  * Leverages PostgREST syntax directly via Axios.
  */
@@ -84,11 +155,13 @@ export const musicService = {
         "banten", "sumatera utara", "sumatera barat", "bali", "sulawesi selatan"
       ].includes(filter.toLowerCase());
 
-      const f = encodeURIComponent(`*${filter}*`);
       if (isRegion) {
+        const f = encodeURIComponent(`*${filter}*`);
         filters.push(`origin_province=ilike.${f}`);
       } else {
-        filters.push(`genre=cs.{${filter.toLowerCase()}}`);
+        const subGenres = getGenreOverlapList(filter);
+        const listStr = subGenres.map(sg => encodeURIComponent(sg)).join(",");
+        filters.push(`genre=ov.{${listStr}}`);
       }
     }
 
