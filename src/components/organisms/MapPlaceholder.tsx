@@ -36,7 +36,7 @@ interface MapWrapperProps {
 export function MapPlaceholder({ onArtistClick }: MapWrapperProps) {
   return (
     <motion.div
-      className="relative flex-1 overflow-hidden rounded-lg bg-(--color-bg-surface)/20 border border-(--color-border-default)"
+      className="relative w-full h-full overflow-hidden rounded-lg bg-(--color-bg-surface)/20 border border-(--color-border-default)"
       variants={fadeUp}
       initial="hidden"
       animate="visible"
