@@ -9,6 +9,7 @@ import {
   Funnel,
   UserCircle,
   CircleNotch,
+  X,
 } from "@phosphor-icons/react";
 import { Text, GlassCard, Badge } from "@/components/atoms";
 import { Pagination } from "@/components/molecules";
@@ -23,14 +24,21 @@ import type { ArtistData } from "./ArtistDrawer";
  * Fetches live data via Supabase PostgREST API with pagination.
  */
 
-const QUICK_FILTERS = [
+const TOP_FILTERS = [
   "Semua",
-  "DKI Jakarta",
-  "Jawa Barat",
-  "Jawa Timur",
   "Pop",
   "Indie",
-  "Dangdut",
+  "DKI Jakarta",
+];
+
+const ALL_GENRES = [
+  "Pop", "Indie", "Dangdut", "Rock", "Jazz", "R&B", "Hip Hop",
+  "Folk", "Electronic", "Acoustic", "Alternative", "Metal", "Reggae"
+];
+
+const ALL_REGIONS = [
+  "DKI Jakarta", "Jawa Barat", "Jawa Tengah", "Jawa Timur", "DI Yogyakarta",
+  "Banten", "Sumatera Utara", "Sumatera Barat", "Bali", "Sulawesi Selatan"
 ];
 
 interface DatabaseExplorerProps {
@@ -41,6 +49,7 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("Semua");
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [artists, setArtists] = useState<ArtistData[]>([]);
@@ -48,6 +57,11 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
 
   const PAGE_SIZE = 10;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // If the active filter is not in TOP_FILTERS, we append it to the visible pills
+  const visibleFilters = TOP_FILTERS.includes(activeFilter) 
+    ? TOP_FILTERS 
+    : [...TOP_FILTERS, activeFilter];
 
   // 1. Debounce the text search query (delays network request by 300ms while typing)
   useEffect(() => {
@@ -133,7 +147,7 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
         {/* Quick Filters */}
         <div className="flex flex-wrap items-center gap-2">
           <Funnel size={16} className="text-(--color-text-secondary) mr-1" />
-          {QUICK_FILTERS.map((filter) => (
+          {visibleFilters.map((filter) => (
             <button
               key={filter}
               onClick={() => setActiveFilter(filter)}
@@ -147,6 +161,12 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
               {filter}
             </button>
           ))}
+          <button
+            onClick={() => setIsFilterModalOpen(true)}
+            className="px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer border border-dashed border-(--color-border-default) text-(--color-text-secondary) hover:text-(--color-text-primary) hover:border-(--color-text-secondary)"
+          >
+            + More
+          </button>
         </div>
       </motion.div>
 
@@ -336,6 +356,93 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
           </div>
         </GlassCard>
       </motion.div>
+
+      {/* ── Filter Modal ── */}
+      <AnimatePresence>
+        {isFilterModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsFilterModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-(--color-bg-default) border border-(--color-border-default) rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-(--color-border-default) bg-(--color-bg-surface)/50">
+                <Text as="h3" variant="label" color="primary" className="font-semibold text-lg">
+                  Explore Filters
+                </Text>
+                <button
+                  onClick={() => setIsFilterModalOpen(false)}
+                  className="p-1 rounded-md text-(--color-text-secondary) hover:bg-(--color-bg-surface) hover:text-(--color-text-primary) transition-colors cursor-pointer"
+                >
+                  <X size={20} weight="bold" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto flex flex-col gap-8">
+                {/* Genres Section */}
+                <div className="flex flex-col gap-3">
+                  <Text variant="label" color="secondary" className="font-medium tracking-wide uppercase text-xs">
+                    Explore Genres
+                  </Text>
+                  <div className="flex flex-wrap gap-2">
+                    {ALL_GENRES.map((genre) => (
+                      <button
+                        key={genre}
+                        onClick={() => {
+                          setActiveFilter(genre);
+                          setIsFilterModalOpen(false);
+                        }}
+                        className={[
+                          "px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer border",
+                          activeFilter === genre
+                            ? "bg-(--color-accent-500)/20 text-(--color-accent-400) border-(--color-accent-500)/50"
+                            : "bg-(--color-bg-surface)/50 text-(--color-text-secondary) border-(--color-border-default) hover:bg-(--color-bg-surface) hover:text-(--color-text-primary)",
+                        ].join(" ")}
+                      >
+                        {genre}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Regions Section */}
+                <div className="flex flex-col gap-3">
+                  <Text variant="label" color="secondary" className="font-medium tracking-wide uppercase text-xs">
+                    Explore Regions
+                  </Text>
+                  <div className="flex flex-wrap gap-2">
+                    {ALL_REGIONS.map((region) => (
+                      <button
+                        key={region}
+                        onClick={() => {
+                          setActiveFilter(region);
+                          setIsFilterModalOpen(false);
+                        }}
+                        className={[
+                          "px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer border",
+                          activeFilter === region
+                            ? "bg-(--color-accent-500)/20 text-(--color-accent-400) border-(--color-accent-500)/50"
+                            : "bg-(--color-bg-surface)/50 text-(--color-text-secondary) border-(--color-border-default) hover:bg-(--color-bg-surface) hover:text-(--color-text-primary)",
+                        ].join(" ")}
+                      >
+                        {region}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

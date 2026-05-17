@@ -77,11 +77,12 @@ export const musicService = {
       );
     }
 
-    // 2. Quick Category Filter (Exact match or array contains for genres)
+    // 2. Quick Category Filter (Handles regions & genres matching robustly)
+    // For the text[] genre array, we cast it to text (genre::text) to perform case-insensitive substring matching.
     if (filter !== "Semua") {
       const f = encodeURIComponent(`*${filter}*`);
       filters.push(
-        `or=(province.ilike.${f},genre.cs.{${encodeURIComponent(filter)}})`,
+        `or=(origin_province.ilike.${f},genre::text.ilike.${f})`,
       );
     }
 
