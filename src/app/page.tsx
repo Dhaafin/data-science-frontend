@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { fade } from "@/lib/motion";
 import {
-  Sidebar,
+  Header,
   KpiBar,
   ArtistDrawer,
   MapPlaceholder,
+  DatabaseExplorer,
   GenreDeepDive,
   ComparativeView,
   AboutView,
@@ -15,92 +14,69 @@ import {
 import type { ArtistData } from "@/components/organisms";
 
 /**
- * Home — Map-First App Shell
+ * Home — Selasar Suara unified vertical-scroll page
  *
- * Routes between four views via the sidebar navigation.
- * DESIGN_GUIDELINES.md §4.1 — fixed 240px sidebar, map-canvas flex-1.
+ * Layout: Sticky Header → Immersive Map (80vh) → Analytical sections.
+ * Replaces the old sidebar-driven conditional view architecture.
+ * All navigation is handled via smooth-scroll anchors in Header.tsx.
  */
 
-type ActiveView = "map" | "genres" | "comparative" | "about";
-
 export default function Home() {
-  const [activeView, setActiveView] = useState<ActiveView>("map");
   const [selectedArtist, setSelectedArtist] = useState<ArtistData | null>(null);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-(--color-bg-canvas)">
-      {/* Fixed sidebar */}
-      <Sidebar activeView={activeView} onViewChange={setActiveView} />
+    <div className="min-h-screen bg-(--color-bg-canvas) text-(--color-text-primary) flex flex-col relative">
+      {/* Sticky top glassmorphic header */}
+      <Header />
 
-      {/* Main content — offset by sidebar width */}
-      <main className="ml-[240px] flex flex-col flex-1 relative overflow-hidden">
-        <AnimatePresence mode="wait">
-          {activeView === "map" && (
-            <motion.div
-              key="map"
-              className="flex flex-col flex-1 h-full"
-              variants={fade}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              {/* KPI overlay bar */}
-              <KpiBar
-                totalArtists={312}
-                avgPopularity={64.8}
-                provincesCovered={28}
-                topGenre="Indo Pop"
-              />
+      {/* ═══════════════════════════════════════════════════════
+          Section 1: Immersive Map Hero Workspace
+          ═══════════════════════════════════════════════════════ */}
+      <section
+        id="map"
+        className="max-w-7xl mx-auto w-full px-6 pt-20 pb-4 flex flex-col h-[80vh]"
+      >
+        {/* KPI overlay bar pinned to top of map area */}
+        <KpiBar
+          totalArtists={312}
+          avgPopularity={64.8}
+          provincesCovered={28}
+          topGenre="Indo Pop"
+        />
 
-              {/* Map canvas area */}
-              <div className="flex-1 px-4 pb-4 min-h-0">
-                <MapPlaceholder onArtistClick={setSelectedArtist} />
-              </div>
-            </motion.div>
-          )}
+        {/* Map canvas — fills remaining height */}
+        <div className="flex-1 min-h-0 relative rounded-lg overflow-hidden border border-(--color-border-default)">
+          <MapPlaceholder onArtistClick={setSelectedArtist} />
+        </div>
+      </section>
 
-          {activeView === "genres" && (
-            <motion.div
-              key="genres"
-              className="flex-1 h-full overflow-hidden"
-              variants={fade}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <GenreDeepDive />
-            </motion.div>
-          )}
+      {/* ═══════════════════════════════════════════════════════
+          Below-the-fold analytical sections
+          Constrained to max-w-7xl for readability on wide screens
+          ═══════════════════════════════════════════════════════ */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-6 flex flex-col gap-16 py-12">
+        {/* Section 1.5: Database Explorer Directory */}
+        <section id="explore" className="scroll-mt-20">
+          <DatabaseExplorer onArtistSelect={setSelectedArtist} />
+        </section>
 
-          {activeView === "comparative" && (
-            <motion.div
-              key="comparative"
-              className="flex-1 h-full overflow-hidden"
-              variants={fade}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <ComparativeView />
-            </motion.div>
-          )}
+        {/* Section 2: Genre Deep-Dive Hub */}
+        <section id="genres" className="scroll-mt-20">
+          <GenreDeepDive />
+        </section>
 
-          {activeView === "about" && (
-            <motion.div
-              key="about"
-              className="flex-1 h-full overflow-hidden"
-              variants={fade}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <AboutView />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Section 3: Regional Comparative Analytics */}
+        <section id="comparative" className="scroll-mt-20">
+          <ComparativeView />
+        </section>
+
+        {/* Section 4: Research Methodology & About */}
+        <section id="about" className="scroll-mt-20">
+          <AboutView />
+        </section>
       </main>
 
-      {/* Slide-over drawer — available on all views */}
+      {/* Slide-over Drawer — globally available for artist details */}
       <ArtistDrawer
         artist={selectedArtist}
         onClose={() => setSelectedArtist(null)}

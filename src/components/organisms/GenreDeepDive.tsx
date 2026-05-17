@@ -52,7 +52,7 @@ export function GenreDeepDive() {
 
   return (
     <motion.div
-      className="flex flex-col gap-6 p-6 h-full overflow-y-auto"
+      className="flex flex-col gap-6 py-6 h-auto"
       variants={staggerContainer}
       initial="hidden"
       animate="visible"

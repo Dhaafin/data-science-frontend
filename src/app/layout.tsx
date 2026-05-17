@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Analisis Spasial Musik Indonesia",
+  title: "Selasar Suara — Analisis Spasial Musik Indonesia",
   description:
-    "Interactive spatial dashboard analyzing the distribution of Indonesian music talent across the archipelago — investigating Jakarta-centrism in the digital streaming era.",
+    "Interactive spatial platform analyzing the distribution of Indonesian music talent across the archipelago — investigating Jakarta-centrism in the digital streaming era.",
 };
 
 export default function RootLayout({
@@ -26,9 +26,9 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-(--color-bg-canvas) text-(--color-text-primary)">
+      <body className="min-h-screen bg-(--color-bg-canvas) text-(--color-text-primary)">
         {children}
       </body>
     </html>
