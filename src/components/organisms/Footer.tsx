@@ -51,9 +51,14 @@ export function Footer() {
                 </Text>
               </div>
             </div>
-            <Text variant="caption" color="secondary" className="leading-relaxed">
-              Platform analisis spasial interaktif untuk memetakan konsentrasi talenta,
-              popularitas, dan persebaran genre musisi di seluruh Indonesia.
+            <Text
+              variant="caption"
+              color="secondary"
+              className="leading-relaxed"
+            >
+              Platform analisis spasial interaktif untuk memetakan konsentrasi
+              talenta, popularitas, dan persebaran genre musisi di seluruh
+              Indonesia.
             </Text>
           </div>
 
@@ -109,18 +114,23 @@ export function Footer() {
           </div>
         </div>
 
-        <Divider spacing="xs" />
+        <Divider spacing="sm" />
 
         {/* Bottom row */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <Text variant="caption" color="muted">
-            &copy; {new Date().getFullYear()} Selasar Suara. Hak Cipta Dilindungi.
+            &copy; {new Date().getFullYear()} Selasar Suara. Hak Cipta
+            Dilindungi.
           </Text>
           <div className="flex items-center gap-1.5">
             <Text variant="caption" color="muted">
               Maju terus musik Indonesia
             </Text>
-            <Heart size={12} weight="fill" className="text-red-500 animate-pulse" />
+            <Heart
+              size={12}
+              weight="fill"
+              className="text-red-500 animate-pulse"
+            />
           </div>
         </div>
       </div>
