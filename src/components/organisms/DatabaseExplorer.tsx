@@ -39,6 +39,7 @@ interface DatabaseExplorerProps {
 
 export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("Semua");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,18 +49,25 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
   const PAGE_SIZE = 10;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  console.log(artists);
+  // 1. Debounce the text search query (delays network request by 300ms while typing)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  // Reset to page 1 on search or filter change
+  // 2. Reset to page 1 on active filter or text query change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, activeFilter]);
+  }, [debouncedSearchQuery, activeFilter]);
 
+  // 3. Data fetching callback targeting the debounced value
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await musicService.getArtists(
-        searchQuery,
+        debouncedSearchQuery,
         activeFilter,
         currentPage,
         PAGE_SIZE,
@@ -71,14 +79,11 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, activeFilter, currentPage]);
+  }, [debouncedSearchQuery, activeFilter, currentPage]);
 
+  // 4. Instantly trigger fetch on parameter updates
   useEffect(() => {
-    // 300ms debounce
-    const timer = setTimeout(() => {
-      fetchData();
-    }, 300);
-    return () => clearTimeout(timer);
+    fetchData();
   }, [fetchData]);
 
   return (

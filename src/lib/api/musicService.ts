@@ -69,25 +69,19 @@ export const musicService = {
     let url = `/music_data?order=popularity.desc`;
     const filters: string[] = [];
 
-    // 1. Text Search (ILIKE across multiple fields)
+    // 1. Text Search (ILIKE across multiple fields matching exact database column names)
     if (query.trim()) {
       const q = encodeURIComponent(`*${query.trim()}*`);
       filters.push(
-        `or=(name.ilike.${q},origin_city.ilike.${q},province.ilike.${q})`,
+        `or=(artist_name.ilike.${q},origin_city.ilike.${q},origin_province.ilike.${q})`,
       );
     }
 
     // 2. Quick Category Filter (Exact match or array contains for genres)
-    // PostgREST syntax: 'cs' for array contains, 'eq' for exact match.
-    // We can just use ilike for simplicity across both if we want, or specific operators.
     if (filter !== "Semua") {
       const f = encodeURIComponent(`*${filter}*`);
-      // Assuming we want to match province OR genres.
-      // For a string array (genres), PostgREST allows checking if it contains an element,
-      // but a simpler broad search is casting it to text and using ilike:
-      // genres::text.ilike.*filter*
       filters.push(
-        `or=(province.ilike.${f},genres.cs.{${encodeURIComponent(filter)}})`,
+        `or=(province.ilike.${f},genre.cs.{${encodeURIComponent(filter)}})`,
       );
     }
 
