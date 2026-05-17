@@ -6,4 +6,5 @@ export { DatabaseExplorer } from "./DatabaseExplorer";
 export { GenreDeepDive } from "./GenreDeepDive";
 export { ComparativeView } from "./ComparativeView";
 export { AboutView } from "./AboutView";
+export { Footer } from "./Footer";
 export type { ArtistData } from "./Drawer";

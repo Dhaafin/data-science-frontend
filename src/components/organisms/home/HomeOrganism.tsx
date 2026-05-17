@@ -11,6 +11,7 @@ import {
   GenreDeepDive,
   ComparativeView,
   Drawer,
+  Footer,
 } from "@/components/organisms";
 import type { ArtistData } from "@/components/organisms";
 import type { CityAggregate } from "@/components/organisms/InteractiveMap";
@@ -196,6 +197,8 @@ export default function HomeOrganism() {
           </div>
         )}
       </Drawer>
+
+      <Footer />
     </div>
   );
 }

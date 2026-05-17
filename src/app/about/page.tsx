@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Header, AboutView } from "@/components/organisms";
+import { Header, AboutView, Footer } from "@/components/organisms";
 
 export const metadata: Metadata = {
   title: "About | Selasar Suara",
@@ -16,6 +16,8 @@ export default function AboutPage() {
       <main className="flex-1 w-full max-w-5xl mx-auto px-6 pt-24 pb-12 flex flex-col gap-8">
         <AboutView />
       </main>
+
+      <Footer />
     </div>
   );
 }
