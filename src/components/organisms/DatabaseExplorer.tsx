@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { staggerContainer, fadeUp } from "@/lib/motion";
-import { MagnifyingGlass, Funnel, UserCircle } from "@phosphor-icons/react";
+import { MagnifyingGlass, Funnel, UserCircle, CircleNotch } from "@phosphor-icons/react";
 import { Text, GlassCard, Badge } from "@/components/atoms";
+import { Pagination } from "@/components/molecules";
+import { musicService } from "@/lib/api/musicService";
 import type { ArtistData } from "./ArtistDrawer";
 
 /**
@@ -12,19 +14,8 @@ import type { ArtistData } from "./ArtistDrawer";
  *
  * Provides a text search and quick-filter interface for the artist database.
  * Connected to the global ArtistDrawer.
- * Mock data used until Supabase integration (M2).
+ * Fetches live data via Supabase PostgREST API with pagination.
  */
-
-const MOCK_ARTISTS: ArtistData[] = [
-  { name: "Hindia", originCity: "Jakarta Selatan", province: "DKI Jakarta", popularity: 82, followers: 1200000, genres: ["Indie Pop", "Indonesian Indie"] },
-  { name: "Pamungkas", originCity: "Jakarta Timur", province: "DKI Jakarta", popularity: 78, followers: 2100000, genres: ["Indie Pop", "Singer-Songwriter"] },
-  { name: "Yura Yunita", originCity: "Bandung", province: "Jawa Barat", popularity: 85, followers: 1800000, genres: ["Indo Pop", "Jazz"] },
-  { name: "Tulus", originCity: "Bukittinggi", province: "Sumatera Barat", popularity: 88, followers: 3500000, genres: ["Indo Pop", "Pop"] },
-  { name: "Denny Caknan", originCity: "Ngawi", province: "Jawa Timur", popularity: 80, followers: 4200000, genres: ["Dangdut Koplo", "Javanese Pop"] },
-  { name: "Nadin Amizah", originCity: "Bandung", province: "Jawa Barat", popularity: 75, followers: 950000, genres: ["Indie Folk", "Pop"] },
-  { name: "Sal Priadi", originCity: "Malang", province: "Jawa Timur", popularity: 70, followers: 500000, genres: ["Indie Pop", "Indonesian Indie"] },
-  { name: "Kunto Aji", originCity: "Yogyakarta", province: "DI Yogyakarta", popularity: 72, followers: 800000, genres: ["Indo Pop", "Indie Pop"] },
-];
 
 const QUICK_FILTERS = ["Semua", "DKI Jakarta", "Jawa Barat", "Jawa Timur", "Pop", "Indie", "Dangdut"];
 
@@ -35,29 +26,39 @@ interface DatabaseExplorerProps {
 export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("Semua");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [artists, setArtists] = useState<ArtistData[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const filteredArtists = useMemo(() => {
-    return MOCK_ARTISTS.filter((artist) => {
-      // 1. Text Search (case-insensitive substring)
-      const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        q === "" ||
-        artist.name.toLowerCase().includes(q) ||
-        artist.originCity.toLowerCase().includes(q) ||
-        artist.province.toLowerCase().includes(q) ||
-        artist.genres.some((g) => g.toLowerCase().includes(q));
+  const PAGE_SIZE = 10;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-      // 2. Quick Filter
-      let matchesFilter = true;
-      if (activeFilter !== "Semua") {
-        matchesFilter =
-          artist.province.includes(activeFilter) ||
-          artist.genres.some((g) => g.includes(activeFilter));
-      }
-
-      return matchesSearch && matchesFilter;
-    }).sort((a, b) => b.popularity - a.popularity); // Sort by popularity desc
+  // Reset to page 1 on search or filter change
+  useEffect(() => {
+    setCurrentPage(1);
   }, [searchQuery, activeFilter]);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await musicService.getArtists(searchQuery, activeFilter, currentPage, PAGE_SIZE);
+      setArtists(res.data);
+      setTotalCount(res.count);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchQuery, activeFilter, currentPage]);
+
+  useEffect(() => {
+    // 300ms debounce
+    const timer = setTimeout(() => {
+      fetchData();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [fetchData]);
 
   return (
     <motion.div
@@ -116,10 +117,23 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
       </motion.div>
 
       {/* ── Results Summary ── */}
-      <motion.div variants={fadeUp}>
+      <motion.div variants={fadeUp} className="flex items-center justify-between">
         <Text variant="caption" color="muted">
-          Showing {filteredArtists.length} of {MOCK_ARTISTS.length} artis
+          Showing {artists.length} of {totalCount} artis
         </Text>
+        <AnimatePresence>
+          {isLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-2"
+            >
+              <CircleNotch size={14} className="animate-spin text-(--color-accent-500)" />
+              <Text variant="caption" color="secondary">Loading data...</Text>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* ── Results Table ── */}
@@ -142,11 +156,15 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
           </div>
 
           {/* Table Body */}
-          <div className="flex flex-col max-h-[400px] overflow-y-auto">
-            {filteredArtists.length > 0 ? (
-              filteredArtists.map((artist, i) => (
+          <div className="flex flex-col min-h-[300px]">
+            {isLoading && artists.length === 0 ? (
+              <div className="flex flex-col items-center justify-center flex-1 py-12 gap-3 opacity-50">
+                <CircleNotch size={32} className="animate-spin text-(--color-text-muted)" />
+              </div>
+            ) : artists.length > 0 ? (
+              artists.map((artist, i) => (
                 <button
-                  key={artist.name}
+                  key={artist.name + i}
                   onClick={() => onArtistSelect(artist)}
                   className={[
                     "grid grid-cols-12 gap-4 px-4 py-3 border-b border-(--color-border-default) last:border-b-0 cursor-pointer text-left items-center",
@@ -200,12 +218,20 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
                 </button>
               ))
             ) : (
-              <div className="p-8 text-center flex flex-col items-center justify-center gap-2">
+              <div className="p-8 text-center flex flex-col items-center justify-center gap-2 py-16">
                 <MagnifyingGlass size={32} className="text-(--color-text-muted)" />
                 <Text variant="label" color="secondary">Tidak ada hasil ditemukan untuk "{searchQuery}"</Text>
                 <Text variant="caption" color="muted">Coba gunakan kata kunci lain atau hapus filter aktif.</Text>
               </div>
             )}
+          </div>
+
+          <div className="px-4 pb-4">
+            <Pagination 
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </GlassCard>
       </motion.div>

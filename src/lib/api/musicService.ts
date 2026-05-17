@@ -28,42 +28,84 @@ export function mapDbToArtistData(dbArtist: DatabaseArtist): ArtistData {
   };
 }
 
+export interface PaginatedResult<T> {
+  data: T[];
+  count: number;
+}
+
+/**
+ * Parses the Content-Range header from PostgREST to extract the total count.
+ * Expected format: "0-9/312" -> returns 312
+ */
+function extractCount(header?: string): number {
+  if (!header) return 0;
+  const parts = header.split("/");
+  if (parts.length === 2) {
+    return parseInt(parts[1], 10) || 0;
+  }
+  return 0;
+}
+
 /**
  * Data Service for querying Indonesian musicians.
  * Leverages PostgREST syntax directly via Axios.
  */
 export const musicService = {
   /**
-   * Fetch all artists sorted by popularity descending
-   * @param limit - Max number of records to return (defaults to 100)
+   * Fetch artists with pagination and optional text search / category filtering.
+   * @param query - The string to search for (name, city, province)
+   * @param filter - A quick filter (e.g., "Jawa Barat", "Pop") or "Semua"
+   * @param page - Current page (1-indexed)
+   * @param pageSize - Items per page
    */
-  async getAllArtists(limit: number = 100): Promise<ArtistData[]> {
-    const data = await supabaseApi.get<never, DatabaseArtist[]>(
-      `/music_data?order=popularity.desc`,
-      {
-        headers: {
-          Range: `0-${limit - 1}`,
-          "Range-Unit": "items",
-        },
-      }
-    );
-    return data.map(mapDbToArtistData);
-  },
+  async getArtists(
+    query: string = "",
+    filter: string = "Semua",
+    page: number = 1,
+    pageSize: number = 10
+  ): Promise<PaginatedResult<ArtistData>> {
+    let url = `/music_data?order=popularity.desc`;
+    const filters: string[] = [];
 
-  /**
-   * Search artists across multiple fields using PostgREST OR operations
-   * @param query - The string to search for (case-insensitive)
-   */
-  async searchArtists(query: string): Promise<ArtistData[]> {
-    if (!query.trim()) return this.getAllArtists();
-    
-    // Format query for PostgREST ILIKE (* acts as wildcard %)
-    const formattedQuery = encodeURIComponent(`*${query}*`);
-    const orFilter = `or=(name.ilike.${formattedQuery},origin_city.ilike.${formattedQuery},province.ilike.${formattedQuery})`;
-    
-    const data = await supabaseApi.get<never, DatabaseArtist[]>(
-      `/music_data?${orFilter}&order=popularity.desc`
-    );
-    return data.map(mapDbToArtistData);
+    // 1. Text Search (ILIKE across multiple fields)
+    if (query.trim()) {
+      const q = encodeURIComponent(`*${query.trim()}*`);
+      filters.push(`or=(name.ilike.${q},origin_city.ilike.${q},province.ilike.${q})`);
+    }
+
+    // 2. Quick Category Filter (Exact match or array contains for genres)
+    // PostgREST syntax: 'cs' for array contains, 'eq' for exact match.
+    // We can just use ilike for simplicity across both if we want, or specific operators.
+    if (filter !== "Semua") {
+      const f = encodeURIComponent(`*${filter}*`);
+      // Assuming we want to match province OR genres.
+      // For a string array (genres), PostgREST allows checking if it contains an element,
+      // but a simpler broad search is casting it to text and using ilike:
+      // genres::text.ilike.*filter*
+      filters.push(`or=(province.ilike.${f},genres.cs.{${encodeURIComponent(filter)}})`);
+    }
+
+    if (filters.length > 0) {
+      // Join all filters with '&'
+      url += `&${filters.join("&")}`;
+    }
+
+    // Pagination headers
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize - 1;
+
+    const response = await supabaseApi.get<DatabaseArtist[]>(url, {
+      headers: {
+        Prefer: "count=exact",
+        Range: `${start}-${end}`,
+        "Range-Unit": "items",
+      },
+    });
+
+    const count = extractCount(response.headers["content-range"]);
+    return {
+      data: response.data.map(mapDbToArtistData),
+      count,
+    };
   },
 };

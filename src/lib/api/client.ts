@@ -21,9 +21,9 @@ export const supabaseApi = axios.create({
   },
 });
 
-// Response interceptor for streamlined data extraction and standard error handling
+// Response interceptor for standard error handling
 supabaseApi.interceptors.response.use(
-  (response) => response.data,
+  (response) => response,
   (error) => {
     // PostgREST errors usually have a message property
     console.error("Supabase API Error:", error.response?.data || error.message);
