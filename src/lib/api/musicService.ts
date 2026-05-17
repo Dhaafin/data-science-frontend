@@ -78,12 +78,18 @@ export const musicService = {
     }
 
     // 2. Quick Category Filter (Handles regions & genres matching robustly)
-    // For the text[] genre array, we cast it to text (genre::text) to perform case-insensitive substring matching.
     if (filter !== "Semua") {
+      const isRegion = [
+        "dki jakarta", "jawa barat", "jawa tengah", "jawa timur", "di yogyakarta",
+        "banten", "sumatera utara", "sumatera barat", "bali", "sulawesi selatan"
+      ].includes(filter.toLowerCase());
+
       const f = encodeURIComponent(`*${filter}*`);
-      filters.push(
-        `or=(origin_province.ilike.${f},genre::text.ilike.${f})`,
-      );
+      if (isRegion) {
+        filters.push(`origin_province=ilike.${f}`);
+      } else {
+        filters.push(`genre::text=ilike.${f}`);
+      }
     }
 
     if (filters.length > 0) {
