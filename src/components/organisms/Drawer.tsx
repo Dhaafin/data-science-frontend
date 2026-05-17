@@ -110,7 +110,7 @@ export function Drawer({
             </div>
 
             {/* Scrollable Content wrapper */}
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+            <div id="drawer-scroll-container" className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
               {children}
             </div>
           </motion.aside>

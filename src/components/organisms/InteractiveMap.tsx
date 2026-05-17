@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, GeoJSON, CircleMarker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Text, Badge } from "@/components/atoms";
 import { cityCentroids } from "@/lib/config/cityCentroids";
 import type { ArtistData } from "@/components/organisms/ArtistDrawer";
 import type { GeoJsonObject } from "geojson";
@@ -33,7 +32,7 @@ interface MapProps {
   onCityClick?: (city: CityAggregate) => void;
 }
 
-export default function InteractiveMap({ onArtistClick, onCityClick }: MapProps) {
+export default function InteractiveMap({ onCityClick }: MapProps) {
   const [geoJsonData, setGeoJsonData] = useState<GeoJsonObject | null>(null);
   const [cityData, setCityData] = useState<CityAggregate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,7 +82,6 @@ export default function InteractiveMap({ onArtistClick, onCityClick }: MapProps)
           const artistData = mapDbToArtistData(row);
           existing.topArtists.push(artistData);
           existing.topArtists.sort((a, b) => b.popularity - a.popularity);
-          existing.topArtists = existing.topArtists.slice(0, 3); // top 3
 
           cityMap.set(city, existing);
         });
