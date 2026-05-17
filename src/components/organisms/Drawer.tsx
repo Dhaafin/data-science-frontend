@@ -141,11 +141,48 @@ export function ArtistDrawer({ artist, onClose }: ArtistDrawerProps) {
       isOpen={!!artist}
       onClose={onClose}
       width="w-[480px]"
-      title={artist?.name}
-      subtitle={artist && `${artist.originCity}, ${artist.province}`}
+      title="Profil Musisi"
+      subtitle="Analisis spasial & metrik popularitas Spotify"
     >
       {artist && (
         <div className="flex flex-col gap-5">
+          {/* Profile Header Banner Overlay */}
+          <div className="relative w-full h-32 rounded-xl overflow-hidden border border-(--color-border-default) bg-black">
+            {/* Blurred background cover */}
+            <img
+              src={artist.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80"}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110"
+            />
+            {/* Gradient mask */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+            
+            {/* Content overlay */}
+            <div className="absolute inset-0 p-4 flex items-end gap-3.5">
+              <motion.div
+                className="size-16 rounded-full overflow-hidden border-2 border-(--color-accent-500) shadow-lg shadow-(--color-accent-glow) shrink-0"
+                whileHover={{ scale: 1.05 }}
+              >
+                <img
+                  src={artist.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150&q=80"}
+                  alt={artist.name}
+                  className="w-full h-full object-cover"
+                />
+              </motion.div>
+              <div className="flex flex-col min-w-0">
+                <Badge color="accent" className="self-start text-[9px] uppercase tracking-wider font-bold mb-0.5">
+                  Musisi Staging
+                </Badge>
+                <Text variant="heading" className="truncate text-white font-bold leading-tight drop-shadow-sm">
+                  {artist.name}
+                </Text>
+                <Text variant="caption" color="secondary" className="truncate leading-none">
+                  {artist.originCity}, {artist.province}
+                </Text>
+              </div>
+            </div>
+          </div>
+
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
