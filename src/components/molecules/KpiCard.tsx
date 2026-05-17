@@ -58,7 +58,7 @@ export function KpiCard({
         decimals={decimals}
         suffix={suffix}
         formatter={formatter}
-        className="text-hero text-(--color-text-primary)"
+        className="text-title text-(--color-text-primary)"
       />
     </GlassCard>
   );
