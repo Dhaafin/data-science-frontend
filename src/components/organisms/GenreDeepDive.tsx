@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { staggerContainer, fadeUp } from "@/lib/motion";
-import { MusicNote, ArrowUp, ArrowDown } from "@phosphor-icons/react";
-import { Text, GlassCard, Badge, Divider } from "@/components/atoms";
+import { MusicNote, ArrowUp, ArrowDown, Warning } from "@phosphor-icons/react";
+import { Text, GlassCard, Badge, Divider, Skeleton } from "@/components/atoms";
+import { musicService, GenreEntry } from "@/lib/api/musicService";
 
 /**
  * GenreDeepDive — Genre distribution view organism
@@ -13,25 +15,6 @@ import { Text, GlassCard, Badge, Divider } from "@/components/atoms";
  * Activated via sidebar nav → "Genre Deep-Dive".
  * DESIGN_GUIDELINES.md §9 — chart rules applied.
  */
-
-interface GenreEntry {
-  name: string;
-  count: number;
-  avgPopularity: number;
-  trend: "up" | "down" | "stable";
-}
-
-/** Mock data — will be replaced with Supabase data in a future milestone */
-const GENRE_DATA: GenreEntry[] = [
-  { name: "Indo Pop", count: 142, avgPopularity: 68, trend: "up" },
-  { name: "Indie Pop", count: 97, avgPopularity: 61, trend: "up" },
-  { name: "R&B / Soul", count: 74, avgPopularity: 57, trend: "stable" },
-  { name: "EDM / Electronic", count: 58, avgPopularity: 53, trend: "up" },
-  { name: "Dangdut / Koplo", count: 51, avgPopularity: 70, trend: "up" },
-  { name: "Reggae", count: 44, avgPopularity: 49, trend: "down" },
-  { name: "Folk / Acoustic", count: 39, avgPopularity: 55, trend: "stable" },
-  { name: "Jazz", count: 27, avgPopularity: 46, trend: "down" },
-];
 
 /** Data viz palette per DESIGN_GUIDELINES.md §9.1 */
 const DATA_COLORS = [
@@ -48,7 +31,70 @@ const DATA_COLORS = [
 const CHART_HEIGHT = 200;
 
 export function GenreDeepDive() {
-  const maxCount = Math.max(...GENRE_DATA.map((g) => g.count));
+  const [genres, setGenres] = useState<GenreEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadData() {
+      try {
+        setIsLoading(true);
+        const data = await musicService.getGenreStats();
+        if (mounted) {
+          setGenres(data);
+          setError(null);
+        }
+      } catch (err) {
+        console.error("Failed to load genre stats:", err);
+        if (mounted) setError("Gagal memuat data genre.");
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
+    loadData();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const displayGenres = genres.slice(0, 8); // Top 8 for the chart
+  const maxCount = Math.max(...displayGenres.map((g) => g.count), 1);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6 py-6 h-auto w-full">
+        <div className="flex flex-col gap-1">
+          <Skeleton className="h-8 w-48 rounded-md" />
+          <Skeleton className="h-4 w-96 rounded-md mt-1" />
+        </div>
+        <Divider spacing="sm" />
+        <GlassCard className="p-5 h-[270px]">
+          <Skeleton className="w-full h-full rounded-md" />
+        </GlassCard>
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <GlassCard key={i} className="h-28">
+              <Skeleton className="w-full h-full rounded-md" />
+            </GlassCard>
+          ))}
+        </div>
+        <GlassCard className="h-64">
+          <Skeleton className="w-full h-full rounded-md" />
+        </GlassCard>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center h-full">
+        <Warning size={48} className="text-(--color-error) mb-4" />
+        <Text as="h2" variant="title" color="primary">Error</Text>
+        <Text variant="body" color="secondary">{error}</Text>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -84,7 +130,7 @@ export function GenreDeepDive() {
             className="flex items-end gap-3 w-full"
             style={{ height: CHART_HEIGHT }}
           >
-            {GENRE_DATA.map((genre, i) => {
+            {displayGenres.map((genre, i) => {
               const barHeightPct = (genre.count / maxCount) * 100;
               const barPx = (barHeightPct / 100) * CHART_HEIGHT;
               return (
@@ -106,7 +152,7 @@ export function GenreDeepDive() {
                   {/* Bar */}
                   <motion.div
                     className="w-full rounded-t-sm group-hover:opacity-90 transition-opacity"
-                    style={{ background: DATA_COLORS[i] }}
+                    style={{ background: DATA_COLORS[i % DATA_COLORS.length] }}
                     initial={{ height: 0 }}
                     animate={{ height: barPx }}
                     transition={{
@@ -122,14 +168,14 @@ export function GenreDeepDive() {
 
           {/* X-axis labels */}
           <div className="flex gap-3 mt-2">
-            {GENRE_DATA.map((genre, i) => (
+            {displayGenres.map((genre, i) => (
               <div key={genre.name} className="flex-1 text-center">
                 <Text
                   as="span"
                   variant="caption"
                   color="muted"
                   className="block truncate"
-                  style={{ color: DATA_COLORS[i] }}
+                  style={{ color: DATA_COLORS[i % DATA_COLORS.length] }}
                 >
                   {genre.name.split(" ")[0]}
                 </Text>
@@ -147,7 +193,7 @@ export function GenreDeepDive() {
         className="grid grid-cols-2 xl:grid-cols-4 gap-4"
         variants={staggerContainer}
       >
-        {GENRE_DATA.slice(0, 4).map((genre, i) => (
+        {displayGenres.slice(0, 4).map((genre) => (
           <motion.div key={genre.name} variants={fadeUp}>
             <GlassCard
               variant="accent"
@@ -185,10 +231,10 @@ export function GenreDeepDive() {
         <GlassCard className="overflow-hidden">
           <div className="px-4 py-3 border-b border-(--color-border-default)">
             <Text variant="label" color="secondary">
-              All Genres
+              All Genres ({genres.length})
             </Text>
           </div>
-          {GENRE_DATA.map((genre, i) => (
+          {genres.map((genre, i) => (
             <div
               key={genre.name}
               className={`flex items-center justify-between px-4 py-3 border-b border-(--color-border-default) last:border-b-0 ${
@@ -200,7 +246,7 @@ export function GenreDeepDive() {
               <div className="flex items-center gap-2">
                 <div
                   className="size-2 rounded-full shrink-0"
-                  style={{ background: DATA_COLORS[i] }}
+                  style={{ background: DATA_COLORS[i % DATA_COLORS.length] }}
                 />
                 <Text variant="label" color="primary">
                   {genre.name}

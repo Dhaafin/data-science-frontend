@@ -188,4 +188,73 @@ export const musicService = {
       count,
     };
   },
+
+  /**
+   * Fetches selective data to compute genre statistics on the client.
+   * Keeps network payload extremely small (e.g. <5KB for ~300 records).
+   */
+  async getGenreStats(): Promise<GenreEntry[]> {
+    // Only select required columns for aggregation to maximize speed
+    const response = await supabaseApi.get<{ genre: string[]; popularity: number }[]>(
+      "/music_data?select=genre,popularity",
+    );
+
+    const data = response.data;
+    const globalTotalPop = data.reduce((sum, item) => sum + (item.popularity || 0), 0);
+    const globalAvgPop = data.length > 0 ? globalTotalPop / data.length : 0;
+
+    // Track total popularity and count per genre
+    const genreMap = new Map<string, { totalPop: number; count: number }>();
+
+    data.forEach((artist) => {
+      const genres = artist.genre || [];
+      const pop = artist.popularity || 0;
+
+      // Ensure we only process unique genres per artist 
+      // (sometimes an artist might have 'pop' and 'indonesian pop' which we can map to a parent if needed, 
+      // but here we just aggregate exactly what is in the DB, capitalizing nicely).
+      const uniqueGenres = Array.from(new Set(genres.map(g => {
+        // Standardize capitalization (e.g. 'indonesian pop' -> 'Indonesian Pop')
+        return g
+          .split(" ")
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(" ");
+      })));
+
+      uniqueGenres.forEach((g) => {
+        const current = genreMap.get(g) || { totalPop: 0, count: 0 };
+        genreMap.set(g, {
+          totalPop: current.totalPop + pop,
+          count: current.count + 1,
+        });
+      });
+    });
+
+    // Convert map to array and compute averages
+    const stats: GenreEntry[] = Array.from(genreMap.entries()).map(([name, stat]) => {
+      const avgPopularity = Math.round(stat.totalPop / stat.count);
+      
+      // Compute mock trend based on relation to global average
+      let trend: "up" | "down" | "stable" = "stable";
+      if (avgPopularity > globalAvgPop + 5) trend = "up";
+      else if (avgPopularity < globalAvgPop - 5) trend = "down";
+
+      return {
+        name,
+        count: stat.count,
+        avgPopularity,
+        trend,
+      };
+    });
+
+    // Sort by count descending
+    return stats.sort((a, b) => b.count - a.count);
+  },
 };
+
+export interface GenreEntry {
+  name: string;
+  count: number;
+  avgPopularity: number;
+  trend: "up" | "down" | "stable";
+}
