@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { fadeUp } from "@/lib/motion";
 import {
@@ -22,17 +24,18 @@ import { Text } from "@/components/atoms";
  */
 
 const NAV_ITEMS = [
-  { id: "map", icon: MapPin, label: "Talent Map" },
-  { id: "explore", icon: MagnifyingGlass, label: "Explore Database" },
-  { id: "genres", icon: MusicNotes, label: "Genre Deep-Dive" },
-  { id: "comparative", icon: ChartBar, label: "Comparative" },
-  { id: "about", icon: Info, label: "About" },
+  { id: "map", path: "/", hash: "#map", icon: MapPin, label: "Talent Map" },
+  { id: "explore", path: "/", hash: "#explore", icon: MagnifyingGlass, label: "Explore Database" },
+  { id: "genres", path: "/", hash: "#genres", icon: MusicNotes, label: "Genre Deep-Dive" },
+  { id: "comparative", path: "/", hash: "#comparative", icon: ChartBar, label: "Comparative" },
+  { id: "about", path: "/about", hash: "", icon: Info, label: "About" },
 ] as const;
 
 type SectionId = (typeof NAV_ITEMS)[number]["id"];
 
 export function Header() {
-  const [activeSection, setActiveSection] = useState<SectionId>("map");
+  const pathname = usePathname();
+  const [activeSection, setActiveSection] = useState<SectionId | string>("map");
   const [scrolled, setScrolled] = useState(false);
 
   /* ── scroll-spy: track which section is in view ── */
@@ -40,18 +43,21 @@ export function Header() {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
 
-      const offsets = NAV_ITEMS.map(({ id }) => {
+      if (pathname !== "/") {
+        setActiveSection(pathname.includes("about") ? "about" : "");
+        return;
+      }
+
+      const offsets = NAV_ITEMS.filter(n => n.hash).map(({ id }) => {
         const el = document.getElementById(id);
         if (!el) return { id, top: Infinity };
         return { id, top: el.getBoundingClientRect().top };
       });
 
-      /* Pick the section whose top edge is closest to (but above) the
-         viewport top, accounting for header height + some padding. */
       const threshold = 120;
-      let current: SectionId = "map";
+      let current = "map";
       for (const { id, top } of offsets) {
-        if (top <= threshold) current = id as SectionId;
+        if (top <= threshold) current = id;
       }
       setActiveSection(current);
     };
@@ -59,14 +65,19 @@ export function Header() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [pathname]);
 
   /* ── smooth-scroll to anchor ── */
-  const scrollTo = useCallback((id: string) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, path: string, hash: string) => {
+    if (pathname === path && hash) {
+      e.preventDefault();
+      const el = document.getElementById(hash.replace("#", ""));
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        window.history.pushState({}, "", hash);
+      }
+    }
+  };
 
   return (
     <motion.header
@@ -81,10 +92,11 @@ export function Header() {
       initial="hidden"
       animate="visible"
     >
-      <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
+      <div className="max-w-5xl mx-auto w-full flex items-center justify-between">
       {/* ── Brand area (left) ── */}
-      <button
-        onClick={() => scrollTo("map")}
+      <Link
+        href="/#map"
+        onClick={(e) => handleNavClick(e, "/", "#map")}
         className="flex items-center gap-2.5 cursor-pointer group"
       >
         <div className="flex items-center justify-center size-8 rounded-lg bg-(--color-accent-500)/15 group-hover:bg-(--color-accent-500)/25 transition-colors">
@@ -107,26 +119,24 @@ export function Header() {
             Analisis Spasial
           </Text>
         </div>
-      </button>
+      </Link>
 
       {/* ── Navigation links (center) ── */}
       <nav className="flex items-center gap-1">
-        {NAV_ITEMS.map(({ id, icon: IconComponent, label }) => {
+        {NAV_ITEMS.map(({ id, path, hash, icon: IconComponent, label }) => {
           const isActive = activeSection === id;
           return (
-            <motion.button
+            <Link
               key={id}
-              onClick={() => scrollTo(id)}
+              href={`${path}${hash}`}
+              onClick={(e) => handleNavClick(e, path, hash)}
               className={[
                 "flex items-center gap-2 px-3.5 py-2 rounded-lg cursor-pointer",
-                "transition-colors duration-150",
+                "transition-colors duration-150 relative",
                 isActive
                   ? "bg-(--color-bg-surface) text-(--color-accent-500)"
                   : "text-(--color-text-secondary) hover:bg-(--color-bg-surface)/50 hover:text-(--color-text-primary)",
               ].join(" ")}
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ duration: 0.1 }}
             >
               <IconComponent
                 size={16}
@@ -140,7 +150,7 @@ export function Header() {
               >
                 {label}
               </Text>
-            </motion.button>
+            </Link>
           );
         })}
       </nav>

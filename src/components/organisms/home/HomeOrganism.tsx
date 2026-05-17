@@ -21,7 +21,7 @@ import type { ArtistData } from "@/components/organisms";
  * All navigation is handled via smooth-scroll anchors in Header.tsx.
  */
 
-export default function Home() {
+export default function HomeOrganism() {
   const [selectedArtist, setSelectedArtist] = useState<ArtistData | null>(null);
 
   return (
