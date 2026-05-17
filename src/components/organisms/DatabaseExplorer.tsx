@@ -26,27 +26,49 @@ import type { ArtistData } from "./ArtistDrawer";
  * Fetches live data via Supabase PostgREST API with pagination.
  */
 
-const TOP_FILTERS = [
-  "Semua",
-  "Pop",
-  "Indie",
-  "DKI Jakarta",
-];
+const TOP_FILTERS = ["Semua", "Pop", "Indie", "DKI Jakarta"];
 
 const ALL_GENRES = [
-  "Pop", "Indie", "Dangdut", "Rock", "Jazz", "R&B", "Hip Hop",
-  "Folk", "Electronic", "Acoustic", "Alternative", "Metal", "Reggae"
+  "Pop",
+  "Indie",
+  "Dangdut",
+  "Rock",
+  "Jazz",
+  "R&B",
+  "Hip Hop",
+  "Folk",
+  "Electronic",
+  "Acoustic",
+  "Alternative",
+  "Metal",
+  "Reggae",
 ];
 
 const ALL_REGIONS = [
-  "DKI Jakarta", "Jawa Barat", "Jawa Tengah", "Jawa Timur", "DI Yogyakarta",
-  "Banten", "Sumatera Utara", "Sumatera Barat", "Bali", "Sulawesi Selatan"
+  "DKI Jakarta",
+  "Jawa Barat",
+  "Jawa Tengah",
+  "Jawa Timur",
+  "DI Yogyakarta",
+  "Banten",
+  "Sumatera Utara",
+  "Sumatera Barat",
+  "Bali",
+  "Sulawesi Selatan",
 ];
 
 const FORMAT_OPTIONS = [
   { label: "Semua Format", value: "Semua" },
-  { label: "Soloist (Lahir)", value: "Soloist", icon: <User size={14} weight="bold" className="text-indigo-400" /> },
-  { label: "Band (Dibentuk)", value: "Band", icon: <Users size={14} weight="bold" className="text-teal-400" /> },
+  {
+    label: "Soloist (Lahir)",
+    value: "Soloist",
+    icon: <User size={14} weight="bold" className="text-indigo-400" />,
+  },
+  {
+    label: "Band (Dibentuk)",
+    value: "Band",
+    icon: <Users size={14} weight="bold" className="text-teal-400" />,
+  },
 ];
 
 interface DatabaseExplorerProps {
@@ -68,8 +90,8 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   // If the active filter is not in TOP_FILTERS, we append it to the visible pills
-  const visibleFilters = TOP_FILTERS.includes(activeFilter) 
-    ? TOP_FILTERS 
+  const visibleFilters = TOP_FILTERS.includes(activeFilter)
+    ? TOP_FILTERS
     : [...TOP_FILTERS, activeFilter];
 
   // 1. Debounce the text search query (delays network request by 300ms while typing)
@@ -312,14 +334,12 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
                             size={12}
                             weight="fill"
                             className="text-teal-400 shrink-0 opacity-80"
-                            title="Band / Group"
                           />
                         ) : (
                           <User
                             size={12}
                             weight="fill"
                             className="text-indigo-400 shrink-0 opacity-80"
-                            title="Soloist"
                           />
                         )}
                       </div>
@@ -413,7 +433,12 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
               className="relative w-full max-w-2xl bg-(--color-bg-default) border border-(--color-border-default) rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
             >
               <div className="flex items-center justify-between px-6 py-4 border-b border-(--color-border-default) bg-(--color-bg-surface)/50">
-                <Text as="h3" variant="label" color="primary" className="font-semibold text-lg">
+                <Text
+                  as="h3"
+                  variant="label"
+                  color="primary"
+                  className="font-semibold text-lg"
+                >
                   Explore Filters
                 </Text>
                 <button
@@ -427,7 +452,11 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
               <div className="p-6 overflow-y-auto flex flex-col gap-8">
                 {/* Genres Section */}
                 <div className="flex flex-col gap-3">
-                  <Text variant="label" color="secondary" className="font-medium tracking-wide uppercase text-xs">
+                  <Text
+                    variant="label"
+                    color="secondary"
+                    className="font-medium tracking-wide uppercase text-xs"
+                  >
                     Explore Genres
                   </Text>
                   <div className="flex flex-wrap gap-2">
@@ -453,7 +482,11 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
 
                 {/* Regions Section */}
                 <div className="flex flex-col gap-3">
-                  <Text variant="label" color="secondary" className="font-medium tracking-wide uppercase text-xs">
+                  <Text
+                    variant="label"
+                    color="secondary"
+                    className="font-medium tracking-wide uppercase text-xs"
+                  >
                     Explore Regions
                   </Text>
                   <div className="flex flex-wrap gap-2">
