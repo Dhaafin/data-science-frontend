@@ -240,11 +240,19 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
                 >
                   {/* Name Column */}
                   <div className="col-span-8 sm:col-span-4 lg:col-span-3 flex items-center gap-3">
-                    <div className="size-8 rounded-full bg-(--color-bg-surface) border border-(--color-border-default) flex items-center justify-center shrink-0 group-hover:border-(--color-accent-500)/50 transition-colors">
-                      <UserCircle
-                        size={20}
-                        className="text-(--color-text-secondary)"
-                      />
+                    <div className="size-8 rounded-full bg-(--color-bg-surface) border border-(--color-border-default) flex items-center justify-center shrink-0 overflow-hidden group-hover:border-(--color-accent-500)/50 transition-colors">
+                      {artist.profilePicture ? (
+                        <img
+                          src={artist.profilePicture}
+                          alt={artist.name}
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        <UserCircle
+                          size={20}
+                          className="text-(--color-text-secondary)"
+                        />
+                      )}
                     </div>
                     <Text
                       variant="label"
