@@ -1,9 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { staggerContainer, fadeUp } from "@/lib/motion";
 import { ChartBar, MapPin, TrendUp } from "@phosphor-icons/react";
-import { Text, GlassCard, Badge, Divider } from "@/components/atoms";
+import { Text, GlassCard, Badge, Divider, Skeleton } from "@/components/atoms";
+import { musicService } from "@/lib/api/musicService";
+import type { ProvinceEntry } from "@/lib/api/musicService";
 
 /**
  * ComparativeView — Province comparison view organism
@@ -12,88 +15,6 @@ import { Text, GlassCard, Badge, Divider } from "@/components/atoms";
  * across Indonesian provinces, rendered as animated horizontal bars.
  * DESIGN_GUIDELINES.md §9 — chart color order applied.
  */
-
-interface ProvinceEntry {
-  province: string;
-  region: string;
-  artistCount: number;
-  avgPopularity: number;
-  topGenre: string;
-}
-
-/** Mock data — replace with Supabase query in future milestone */
-const PROVINCE_DATA: ProvinceEntry[] = [
-  {
-    province: "DKI Jakarta",
-    region: "Jawa",
-    artistCount: 138,
-    avgPopularity: 71,
-    topGenre: "Indo Pop",
-  },
-  {
-    province: "Jawa Barat",
-    region: "Jawa",
-    artistCount: 64,
-    avgPopularity: 64,
-    topGenre: "Indie Pop",
-  },
-  {
-    province: "Jawa Timur",
-    region: "Jawa",
-    artistCount: 47,
-    avgPopularity: 60,
-    topGenre: "Dangdut",
-  },
-  {
-    province: "Sumatera Utara",
-    region: "Sumatera",
-    artistCount: 23,
-    avgPopularity: 52,
-    topGenre: "R&B",
-  },
-  {
-    province: "Sulawesi Selatan",
-    region: "Sulawesi",
-    artistCount: 19,
-    avgPopularity: 57,
-    topGenre: "Indie Pop",
-  },
-  {
-    province: "Bali",
-    region: "Nusa Tenggara",
-    artistCount: 15,
-    avgPopularity: 50,
-    topGenre: "Folk",
-  },
-  {
-    province: "Sumatera Selatan",
-    region: "Sumatera",
-    artistCount: 12,
-    avgPopularity: 48,
-    topGenre: "Indo Pop",
-  },
-  {
-    province: "Kalimantan Timur",
-    region: "Kalimantan",
-    artistCount: 9,
-    avgPopularity: 45,
-    topGenre: "R&B",
-  },
-  {
-    province: "Maluku",
-    region: "Maluku",
-    artistCount: 7,
-    avgPopularity: 44,
-    topGenre: "Soul",
-  },
-  {
-    province: "Papua",
-    region: "Papua",
-    artistCount: 5,
-    avgPopularity: 38,
-    topGenre: "Folk",
-  },
-];
 
 const REGION_COLORS: Record<string, string> = {
   Jawa: "var(--color-data-1)",
@@ -106,15 +27,59 @@ const REGION_COLORS: Record<string, string> = {
 };
 
 export function ComparativeView() {
-  const maxArtists = Math.max(...PROVINCE_DATA.map((p) => p.artistCount));
-  const maxPop = Math.max(...PROVINCE_DATA.map((p) => p.avgPopularity));
+  const [provinceData, setProvinceData] = useState<ProvinceEntry[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const topProvince = PROVINCE_DATA[0];
-  const jakartaShare = Math.round(
-    (topProvince.artistCount /
-      PROVINCE_DATA.reduce((s, p) => s + p.artistCount, 0)) *
-      100,
-  );
+  useEffect(() => {
+    async function loadProvinceData() {
+      try {
+        const stats = await musicService.getProvinceComparisonStats();
+        setProvinceData(stats);
+      } catch (err) {
+        console.error("Error loading province comparison data:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadProvinceData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6 py-6 h-auto animate-pulse">
+        <div className="flex flex-col gap-1">
+          <Skeleton className="h-7 w-48 rounded" />
+          <Skeleton className="h-4 w-72 rounded mt-1" />
+        </div>
+        <Divider spacing="sm" />
+        <Skeleton className="h-20 w-full rounded-xl" />
+        <div className="grid grid-cols-1 gap-6">
+          <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-64 w-full rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (provinceData.length === 0) {
+    return (
+      <div className="flex flex-col gap-6 py-6 h-auto items-center justify-center min-h-[300px]">
+        <Text color="secondary">Tidak ada data provinsi ditemukan.</Text>
+      </div>
+    );
+  }
+
+  const maxArtists = Math.max(...provinceData.map((p) => p.artistCount), 1);
+  const maxPop = Math.max(...provinceData.map((p) => p.avgPopularity), 1);
+
+  const topProvince = provinceData[0] || { province: "N/A", artistCount: 0 };
+  const jakartaShare = provinceData.length > 0
+    ? Math.round(
+        (topProvince.artistCount /
+          provinceData.reduce((s, p) => s + p.artistCount, 0)) *
+          100,
+      )
+    : 0;
 
   return (
     <motion.div
@@ -183,7 +148,7 @@ export function ComparativeView() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {PROVINCE_DATA.map((item, i) => {
+            {provinceData.map((item, i) => {
               const widthPct = (item.artistCount / maxArtists) * 100;
               const color = REGION_COLORS[item.region] ?? "var(--color-data-1)";
               return (
@@ -252,7 +217,7 @@ export function ComparativeView() {
               Avg. Popularity &amp; Top Genre
             </Text>
           </div>
-          {PROVINCE_DATA.map((item, i) => {
+          {provinceData.map((item, i) => {
             const popPct = (item.avgPopularity / maxPop) * 100;
             const color = REGION_COLORS[item.region] ?? "var(--color-data-1)";
             return (

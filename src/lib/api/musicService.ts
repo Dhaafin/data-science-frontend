@@ -250,6 +250,172 @@ export const musicService = {
     // Sort by count descending
     return stats.sort((a, b) => b.count - a.count);
   },
+
+  /**
+   * Fetches selective data to compute global KPI metrics on the client.
+   */
+  async getKpiStats(): Promise<{
+    totalArtists: number;
+    avgPopularity: number;
+    provincesCovered: number;
+    topGenre: string;
+  }> {
+    const response = await supabaseApi.get<{ origin_province: string; popularity: number; genre: string[] }[]>(
+      "/music_data?select=origin_province,popularity,genre"
+    );
+
+    const data = response.data;
+    const totalArtists = data.length;
+    const avgPopularity = totalArtists > 0 
+      ? Math.round(data.reduce((sum, item) => sum + (item.popularity || 0), 0) / totalArtists * 10) / 10
+      : 0;
+
+    const provinces = new Set(data.map((item) => item.origin_province).filter(Boolean));
+    const provincesCovered = provinces.size;
+
+    // Calculate top genre frequency
+    const genreCounts = new Map<string, number>();
+    data.forEach((item) => {
+      (item.genre || []).forEach((g) => {
+        const normalized = g.toLowerCase().trim();
+        if (normalized) {
+          genreCounts.set(normalized, (genreCounts.get(normalized) || 0) + 1);
+        }
+      });
+    });
+
+    let topGenre = "N/A";
+    let maxCount = 0;
+    genreCounts.forEach((count, genre) => {
+      if (count > maxCount) {
+        maxCount = count;
+        topGenre = genre;
+      }
+    });
+
+    // Capitalize top genre nicely
+    topGenre = topGenre
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+
+    return {
+      totalArtists,
+      avgPopularity,
+      provincesCovered,
+      topGenre: topGenre || "Indo Pop",
+    };
+  },
+
+  /**
+   * Fetches and aggregates live province-level comparative metrics.
+   */
+  async getProvinceComparisonStats(): Promise<ProvinceEntry[]> {
+    const response = await supabaseApi.get<{ origin_province: string; popularity: number; genre: string[] }[]>(
+      "/music_data?select=origin_province,popularity,genre"
+    );
+
+    const data = response.data;
+
+    // Group by province
+    const provinceMap = new Map<
+      string,
+      {
+        totalPopularity: number;
+        artistCount: number;
+        genres: Map<string, number>;
+      }
+    >();
+
+    data.forEach((item) => {
+      const province = item.origin_province || "Unknown";
+      const popularity = item.popularity || 0;
+
+      const current = provinceMap.get(province) || {
+        totalPopularity: 0,
+        artistCount: 0,
+        genres: new Map<string, number>(),
+      };
+
+      current.artistCount += 1;
+      current.totalPopularity += popularity;
+
+      (item.genre || []).forEach((g) => {
+        const normalized = g.trim();
+        if (normalized) {
+          current.genres.set(normalized, (current.genres.get(normalized) || 0) + 1);
+        }
+      });
+
+      provinceMap.set(province, current);
+    });
+
+    // Helper to map province to region
+    const getRegionForProvince = (prov: string): string => {
+      const p = prov.toLowerCase();
+      if (
+        p.includes("jakarta") ||
+        p.includes("banten") ||
+        p.includes("jawa") ||
+        p.includes("yogyakarta")
+      )
+        return "Jawa";
+      if (
+        p.includes("sumatera") ||
+        p.includes("aceh") ||
+        p.includes("riau") ||
+        p.includes("jambi") ||
+        p.includes("bengkulu") ||
+        p.includes("lampung") ||
+        p.includes("bangka")
+      )
+        return "Sumatera";
+      if (p.includes("sulawesi") || p.includes("gorontalo")) return "Sulawesi";
+      if (
+        p.includes("bali") ||
+        p.includes("nusa tenggara") ||
+        p.includes("ntt") ||
+        p.includes("ntb")
+      )
+        return "Nusa Tenggara";
+      if (p.includes("kalimantan")) return "Kalimantan";
+      if (p.includes("maluku")) return "Maluku";
+      if (p.includes("papua")) return "Papua";
+      return "Lainnya";
+    };
+
+    // Map to ProvinceEntry and compute details
+    const comparisonData: ProvinceEntry[] = Array.from(provinceMap.entries())
+      .filter(([prov]) => prov !== "Unknown")
+      .map(([province, stats]) => {
+        // Find top genre
+        let topGenre = "Unknown";
+        let maxCount = 0;
+        stats.genres.forEach((count, gen) => {
+          if (count > maxCount) {
+            maxCount = count;
+            topGenre = gen;
+          }
+        });
+
+        // Capitalize nicely
+        topGenre = topGenre
+          .split(" ")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+
+        return {
+          province,
+          region: getRegionForProvince(province),
+          artistCount: stats.artistCount,
+          avgPopularity: Math.round(stats.totalPopularity / stats.artistCount),
+          topGenre: topGenre === "Unknown" ? "Pop" : topGenre,
+        };
+      });
+
+    // Sort by artist count descending
+    return comparisonData.sort((a, b) => b.artistCount - a.artistCount);
+  },
 };
 
 export interface GenreEntry {
@@ -257,4 +423,12 @@ export interface GenreEntry {
   count: number;
   avgPopularity: number;
   trend: "up" | "down" | "stable";
+}
+
+export interface ProvinceEntry {
+  province: string;
+  region: string;
+  artistCount: number;
+  avgPopularity: number;
+  topGenre: string;
 }

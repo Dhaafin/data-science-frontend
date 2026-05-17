@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { musicService } from "@/lib/api/musicService";
 import {
   Header,
   KpiBar,
@@ -27,6 +28,24 @@ import { Text, Badge, Divider, AnimatedCounter } from "@/components/atoms";
 export default function Home() {
   const [selectedArtist, setSelectedArtist] = useState<ArtistData | null>(null);
   const [selectedCity, setSelectedCity] = useState<CityAggregate | null>(null);
+  const [kpiStats, setKpiStats] = useState<{
+    totalArtists: number;
+    avgPopularity: number;
+    provincesCovered: number;
+    topGenre: string;
+  } | null>(null);
+
+  useEffect(() => {
+    async function loadKpis() {
+      try {
+        const stats = await musicService.getKpiStats();
+        setKpiStats(stats);
+      } catch (err) {
+        console.error("Error loading KPIs:", err);
+      }
+    }
+    loadKpis();
+  }, []);
 
   const formatFollowers = (n: number): string => {
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -48,10 +67,10 @@ export default function Home() {
       >
         {/* KPI overlay bar pinned to top of map area */}
         <KpiBar
-          totalArtists={312}
-          avgPopularity={64.8}
-          provincesCovered={28}
-          topGenre="Indo Pop"
+          totalArtists={kpiStats?.totalArtists ?? 0}
+          avgPopularity={kpiStats?.avgPopularity ?? 0}
+          provincesCovered={kpiStats?.provincesCovered ?? 0}
+          topGenre={kpiStats?.topGenre ?? "Loading..."}
         />
 
         {/* Map canvas — fills remaining height */}
