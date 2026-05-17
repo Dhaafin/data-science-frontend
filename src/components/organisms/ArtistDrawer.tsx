@@ -16,6 +16,7 @@ import { ProvinceRankChart } from "@/components/molecules";
 
 export interface ArtistData {
   name: string;
+  profilePicture: string;
   originCity: string;
   province: string;
   popularity: number;
@@ -61,7 +62,12 @@ export function ArtistDrawer({ artist, onClose }: ArtistDrawerProps) {
             {/* Header */}
             <div className="flex items-start justify-between p-6 pb-0">
               <div className="flex flex-col gap-1 min-w-0">
-                <Text as="h2" variant="title" color="primary" className="truncate">
+                <Text
+                  as="h2"
+                  variant="title"
+                  color="primary"
+                  className="truncate"
+                >
                   {artist.name}
                 </Text>
                 <Text variant="label" color="secondary">
@@ -84,14 +90,18 @@ export function ArtistDrawer({ artist, onClose }: ArtistDrawerProps) {
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
-                  <Text variant="caption" color="secondary">Popularity</Text>
+                  <Text variant="caption" color="secondary">
+                    Popularity
+                  </Text>
                   <AnimatedCounter
                     value={artist.popularity}
                     className="text-title text-(--color-accent-500) font-semibold"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <Text variant="caption" color="secondary">Followers</Text>
+                  <Text variant="caption" color="secondary">
+                    Followers
+                  </Text>
                   <AnimatedCounter
                     value={artist.followers}
                     formatter={formatFollowers}
@@ -104,10 +114,14 @@ export function ArtistDrawer({ artist, onClose }: ArtistDrawerProps) {
 
               {/* Genres */}
               <div className="flex flex-col gap-2">
-                <Text variant="caption" color="secondary">Genres</Text>
+                <Text variant="caption" color="secondary">
+                  Genres
+                </Text>
                 <div className="flex flex-wrap gap-1.5">
                   {artist.genres.map((genre) => (
-                    <Badge key={genre} color="accent">{genre}</Badge>
+                    <Badge key={genre} color="accent">
+                      {genre}
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -116,7 +130,9 @@ export function ArtistDrawer({ artist, onClose }: ArtistDrawerProps) {
 
               {/* Province context */}
               <div className="flex flex-col gap-2">
-                <Text variant="caption" color="secondary">Province Rank (by Artist Count)</Text>
+                <Text variant="caption" color="secondary">
+                  Province Rank (by Artist Count)
+                </Text>
                 <ProvinceRankChart activeProvince={artist.province} />
               </div>
             </div>

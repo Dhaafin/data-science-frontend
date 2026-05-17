@@ -1,9 +1,15 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { staggerContainer, fadeUp } from "@/lib/motion";
-import { MagnifyingGlass, Funnel, UserCircle, CircleNotch } from "@phosphor-icons/react";
+import {
+  MagnifyingGlass,
+  Funnel,
+  UserCircle,
+  CircleNotch,
+} from "@phosphor-icons/react";
 import { Text, GlassCard, Badge } from "@/components/atoms";
 import { Pagination } from "@/components/molecules";
 import { musicService } from "@/lib/api/musicService";
@@ -17,7 +23,15 @@ import type { ArtistData } from "./ArtistDrawer";
  * Fetches live data via Supabase PostgREST API with pagination.
  */
 
-const QUICK_FILTERS = ["Semua", "DKI Jakarta", "Jawa Barat", "Jawa Timur", "Pop", "Indie", "Dangdut"];
+const QUICK_FILTERS = [
+  "Semua",
+  "DKI Jakarta",
+  "Jawa Barat",
+  "Jawa Timur",
+  "Pop",
+  "Indie",
+  "Dangdut",
+];
 
 interface DatabaseExplorerProps {
   onArtistSelect: (artist: ArtistData) => void;
@@ -34,6 +48,8 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
   const PAGE_SIZE = 10;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
+  console.log(artists);
+
   // Reset to page 1 on search or filter change
   useEffect(() => {
     setCurrentPage(1);
@@ -42,7 +58,12 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await musicService.getArtists(searchQuery, activeFilter, currentPage, PAGE_SIZE);
+      const res = await musicService.getArtists(
+        searchQuery,
+        activeFilter,
+        currentPage,
+        PAGE_SIZE,
+      );
       setArtists(res.data);
       setTotalCount(res.count);
     } catch (e) {
@@ -70,13 +91,18 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
       {/* ── Section Header ── */}
       <motion.div variants={fadeUp} className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <MagnifyingGlass size={20} weight="bold" className="text-(--color-accent-500)" />
+          <MagnifyingGlass
+            size={20}
+            weight="bold"
+            className="text-(--color-accent-500)"
+          />
           <Text as="h2" variant="title" color="primary">
             Database Explorer
           </Text>
         </div>
         <Text variant="body" color="secondary">
-          Cari dan eksplorasi data musisi berdasarkan nama, daerah asal, atau genre.
+          Cari dan eksplorasi data musisi berdasarkan nama, daerah asal, atau
+          genre.
         </Text>
       </motion.div>
 
@@ -85,7 +111,10 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
         {/* Search Bar */}
         <div className="relative w-full max-w-2xl">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <MagnifyingGlass size={18} className="text-(--color-text-secondary)" />
+            <MagnifyingGlass
+              size={18}
+              className="text-(--color-text-secondary)"
+            />
           </div>
           <input
             type="text"
@@ -117,7 +146,10 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
       </motion.div>
 
       {/* ── Results Summary ── */}
-      <motion.div variants={fadeUp} className="flex items-center justify-between">
+      <motion.div
+        variants={fadeUp}
+        className="flex items-center justify-between"
+      >
         <Text variant="caption" color="muted">
           Showing {artists.length} of {totalCount} artis
         </Text>
@@ -129,8 +161,13 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
               exit={{ opacity: 0 }}
               className="flex items-center gap-2"
             >
-              <CircleNotch size={14} className="animate-spin text-(--color-accent-500)" />
-              <Text variant="caption" color="secondary">Loading data...</Text>
+              <CircleNotch
+                size={14}
+                className="animate-spin text-(--color-accent-500)"
+              />
+              <Text variant="caption" color="secondary">
+                Loading data...
+              </Text>
             </motion.div>
           )}
         </AnimatePresence>
@@ -142,16 +179,40 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
           {/* Table Header */}
           <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-(--color-border-default) bg-(--color-bg-surface)/30">
             <div className="col-span-4 lg:col-span-3">
-              <Text variant="caption" color="secondary" className="uppercase tracking-wider">Artist Name</Text>
+              <Text
+                variant="caption"
+                color="secondary"
+                className="uppercase tracking-wider"
+              >
+                Artist Name
+              </Text>
             </div>
             <div className="col-span-4 lg:col-span-3 hidden sm:block">
-              <Text variant="caption" color="secondary" className="uppercase tracking-wider">Daerah (Origin)</Text>
+              <Text
+                variant="caption"
+                color="secondary"
+                className="uppercase tracking-wider"
+              >
+                Daerah (Origin)
+              </Text>
             </div>
             <div className="col-span-3 lg:col-span-4 hidden md:block">
-              <Text variant="caption" color="secondary" className="uppercase tracking-wider">Top Genre</Text>
+              <Text
+                variant="caption"
+                color="secondary"
+                className="uppercase tracking-wider"
+              >
+                Top Genre
+              </Text>
             </div>
             <div className="col-span-4 sm:col-span-4 md:col-span-2 lg:col-span-2 text-right">
-              <Text variant="caption" color="secondary" className="uppercase tracking-wider">Popularity</Text>
+              <Text
+                variant="caption"
+                color="secondary"
+                className="uppercase tracking-wider"
+              >
+                Popularity
+              </Text>
             </div>
           </div>
 
@@ -159,7 +220,10 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
           <div className="flex flex-col min-h-[300px]">
             {isLoading && artists.length === 0 ? (
               <div className="flex flex-col items-center justify-center flex-1 py-12 gap-3 opacity-50">
-                <CircleNotch size={32} className="animate-spin text-(--color-text-muted)" />
+                <CircleNotch
+                  size={32}
+                  className="animate-spin text-(--color-text-muted)"
+                />
               </div>
             ) : artists.length > 0 ? (
               artists.map((artist, i) => (
@@ -168,23 +232,36 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
                   onClick={() => onArtistSelect(artist)}
                   className={[
                     "grid grid-cols-12 gap-4 px-4 py-3 border-b border-(--color-border-default) last:border-b-0 cursor-pointer text-left items-center",
-                    i % 2 === 0 ? "bg-transparent" : "bg-(--color-bg-surface)/20",
+                    i % 2 === 0
+                      ? "bg-transparent"
+                      : "bg-(--color-bg-surface)/20",
                     "hover:bg-(--color-bg-surface)/60 transition-colors group",
                   ].join(" ")}
                 >
                   {/* Name Column */}
                   <div className="col-span-8 sm:col-span-4 lg:col-span-3 flex items-center gap-3">
                     <div className="size-8 rounded-full bg-(--color-bg-surface) border border-(--color-border-default) flex items-center justify-center shrink-0 group-hover:border-(--color-accent-500)/50 transition-colors">
-                      <UserCircle size={20} className="text-(--color-text-secondary)" />
+                      <UserCircle
+                        size={20}
+                        className="text-(--color-text-secondary)"
+                      />
                     </div>
-                    <Text variant="label" color="primary" className="truncate font-semibold group-hover:text-(--color-accent-400) transition-colors">
+                    <Text
+                      variant="label"
+                      color="primary"
+                      className="truncate font-semibold group-hover:text-(--color-accent-400) transition-colors"
+                    >
                       {artist.name}
                     </Text>
                   </div>
 
                   {/* Origin Column */}
                   <div className="col-span-4 lg:col-span-3 hidden sm:flex flex-col min-w-0">
-                    <Text variant="label" color="secondary" className="truncate">
+                    <Text
+                      variant="label"
+                      color="secondary"
+                      className="truncate"
+                    >
                       {artist.originCity}
                     </Text>
                     <Text variant="caption" color="muted" className="truncate">
@@ -195,10 +272,14 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
                   {/* Genre Column */}
                   <div className="col-span-3 lg:col-span-4 hidden md:flex items-center gap-1.5 flex-wrap">
                     {artist.genres.slice(0, 2).map((genre) => (
-                      <Badge key={genre} color="info">{genre}</Badge>
+                      <Badge key={genre} color="info">
+                        {genre}
+                      </Badge>
                     ))}
                     {artist.genres.length > 2 && (
-                      <Text variant="caption" color="muted">+{artist.genres.length - 2}</Text>
+                      <Text variant="caption" color="muted">
+                        +{artist.genres.length - 2}
+                      </Text>
                     )}
                   </div>
 
@@ -219,15 +300,22 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
               ))
             ) : (
               <div className="p-8 text-center flex flex-col items-center justify-center gap-2 py-16">
-                <MagnifyingGlass size={32} className="text-(--color-text-muted)" />
-                <Text variant="label" color="secondary">Tidak ada hasil ditemukan untuk "{searchQuery}"</Text>
-                <Text variant="caption" color="muted">Coba gunakan kata kunci lain atau hapus filter aktif.</Text>
+                <MagnifyingGlass
+                  size={32}
+                  className="text-(--color-text-muted)"
+                />
+                <Text variant="label" color="secondary">
+                  Tidak ada hasil ditemukan untuk &quot;{searchQuery}&ldquo;
+                </Text>
+                <Text variant="caption" color="muted">
+                  Coba gunakan kata kunci lain atau hapus filter aktif.
+                </Text>
               </div>
             )}
           </div>
 
           <div className="px-4 pb-4">
-            <Pagination 
+            <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}

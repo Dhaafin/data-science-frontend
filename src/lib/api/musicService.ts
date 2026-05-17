@@ -6,12 +6,13 @@ import type { ArtistData } from "@/components/organisms/ArtistDrawer";
  */
 export interface DatabaseArtist {
   id: string;
-  name: string;
+  profile_picture: string;
+  artist_name: string;
   origin_city: string;
   province: string;
   popularity: number;
   followers: number;
-  genres: string[];
+  genre: string[];
 }
 
 /**
@@ -19,12 +20,13 @@ export interface DatabaseArtist {
  */
 export function mapDbToArtistData(dbArtist: DatabaseArtist): ArtistData {
   return {
-    name: dbArtist.name,
+    name: dbArtist.artist_name,
+    profilePicture: dbArtist.profile_picture,
     originCity: dbArtist.origin_city,
     province: dbArtist.province,
     popularity: dbArtist.popularity,
     followers: dbArtist.followers,
-    genres: dbArtist.genres || [],
+    genres: dbArtist.genre || [],
   };
 }
 
@@ -62,7 +64,7 @@ export const musicService = {
     query: string = "",
     filter: string = "Semua",
     page: number = 1,
-    pageSize: number = 10
+    pageSize: number = 10,
   ): Promise<PaginatedResult<ArtistData>> {
     let url = `/music_data?order=popularity.desc`;
     const filters: string[] = [];
@@ -70,7 +72,9 @@ export const musicService = {
     // 1. Text Search (ILIKE across multiple fields)
     if (query.trim()) {
       const q = encodeURIComponent(`*${query.trim()}*`);
-      filters.push(`or=(name.ilike.${q},origin_city.ilike.${q},province.ilike.${q})`);
+      filters.push(
+        `or=(name.ilike.${q},origin_city.ilike.${q},province.ilike.${q})`,
+      );
     }
 
     // 2. Quick Category Filter (Exact match or array contains for genres)
@@ -82,7 +86,9 @@ export const musicService = {
       // For a string array (genres), PostgREST allows checking if it contains an element,
       // but a simpler broad search is casting it to text and using ilike:
       // genres::text.ilike.*filter*
-      filters.push(`or=(province.ilike.${f},genres.cs.{${encodeURIComponent(filter)}})`);
+      filters.push(
+        `or=(province.ilike.${f},genres.cs.{${encodeURIComponent(filter)}})`,
+      );
     }
 
     if (filters.length > 0) {
