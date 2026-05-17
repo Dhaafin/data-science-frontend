@@ -13,6 +13,7 @@ export interface DatabaseArtist {
   popularity: number;
   followers: number;
   genre: string[];
+  artist_type?: string;
 }
 
 /**
@@ -27,6 +28,7 @@ export function mapDbToArtistData(dbArtist: DatabaseArtist): ArtistData {
     popularity: dbArtist.popularity,
     followers: dbArtist.followers,
     genres: dbArtist.genre || [],
+    artistType: dbArtist.artist_type || "Person",
   };
 }
 
@@ -136,6 +138,7 @@ export const musicService = {
     filter: string = "Semua",
     page: number = 1,
     pageSize: number = 10,
+    artistType: string = "Semua",
   ): Promise<PaginatedResult<ArtistData>> {
     let url = `/music_data?order=popularity.desc`;
     const filters: string[] = [];
@@ -162,6 +165,15 @@ export const musicService = {
         const subGenres = getGenreOverlapList(filter);
         const listStr = subGenres.map(sg => encodeURIComponent(sg)).join(",");
         filters.push(`genre=ov.{${listStr}}`);
+      }
+    }
+
+    // 3. Format/Artist Type Filter (Soloist vs. Band)
+    if (artistType !== "Semua") {
+      if (artistType === "Soloist") {
+        filters.push("artist_type=eq.Person");
+      } else if (artistType === "Band") {
+        filters.push("artist_type=eq.Group");
       }
     }
 

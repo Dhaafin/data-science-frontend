@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { slideInRight } from "@/lib/motion";
-import { X } from "@phosphor-icons/react";
+import { X, User, Users } from "@phosphor-icons/react";
 import { Text, Badge, Divider, AnimatedCounter } from "@/components/atoms";
 import { ProvinceRankChart } from "@/components/molecules";
 
@@ -14,6 +14,7 @@ export interface ArtistData {
   popularity: number;
   followers: number;
   genres: string[];
+  artistType?: string;
 }
 
 interface DrawerProps {
@@ -170,13 +171,27 @@ export function ArtistDrawer({ artist, onClose }: ArtistDrawerProps) {
                 />
               </motion.div>
               <div className="flex flex-col min-w-0">
-                <Badge color="accent" className="self-start text-[9px] uppercase tracking-wider font-bold mb-0.5">
-                  Musisi Staging
-                </Badge>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Badge color="accent" className="text-[9px] uppercase tracking-wider font-bold">
+                    Musisi Staging
+                  </Badge>
+                  {artist.artistType === "Group" ? (
+                    <Badge color="info" className="flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                      <Users size={10} weight="bold" className="shrink-0" />
+                      <span>Band</span>
+                    </Badge>
+                  ) : (
+                    <Badge color="info" className="flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                      <User size={10} weight="bold" className="shrink-0" />
+                      <span>Soloist</span>
+                    </Badge>
+                  )}
+                </div>
                 <Text variant="heading" className="truncate text-white font-bold leading-tight drop-shadow-sm">
                   {artist.name}
                 </Text>
                 <Text variant="caption" color="secondary" className="truncate leading-none">
+                  {artist.artistType === "Group" ? "Dibentuk di " : "Lahir di "}
                   {artist.originCity}, {artist.province}
                 </Text>
               </div>

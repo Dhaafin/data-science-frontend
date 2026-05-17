@@ -10,9 +10,11 @@ import {
   UserCircle,
   CircleNotch,
   X,
+  User,
+  Users,
 } from "@phosphor-icons/react";
 import { Text, GlassCard, Badge } from "@/components/atoms";
-import { Pagination } from "@/components/molecules";
+import { Pagination, Dropdown } from "@/components/molecules";
 import { musicService } from "@/lib/api/musicService";
 import type { ArtistData } from "./ArtistDrawer";
 
@@ -41,6 +43,12 @@ const ALL_REGIONS = [
   "Banten", "Sumatera Utara", "Sumatera Barat", "Bali", "Sulawesi Selatan"
 ];
 
+const FORMAT_OPTIONS = [
+  { label: "Semua Format", value: "Semua" },
+  { label: "Soloist (Lahir)", value: "Soloist", icon: <User size={14} weight="bold" className="text-indigo-400" /> },
+  { label: "Band (Dibentuk)", value: "Band", icon: <Users size={14} weight="bold" className="text-teal-400" /> },
+];
+
 interface DatabaseExplorerProps {
   onArtistSelect: (artist: ArtistData) => void;
 }
@@ -49,6 +57,7 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("Semua");
+  const [formatFilter, setFormatFilter] = useState("Semua");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,10 +80,10 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // 2. Reset to page 1 on active filter or text query change
+  // 2. Reset to page 1 on active filter, text query, or format filter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchQuery, activeFilter]);
+  }, [debouncedSearchQuery, activeFilter, formatFilter]);
 
   // 3. Data fetching callback targeting the debounced value
   const fetchData = useCallback(async () => {
@@ -85,6 +94,7 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
         activeFilter,
         currentPage,
         PAGE_SIZE,
+        formatFilter,
       );
       setArtists(res.data);
       setTotalCount(res.count);
@@ -93,7 +103,7 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearchQuery, activeFilter, currentPage]);
+  }, [debouncedSearchQuery, activeFilter, currentPage, formatFilter]);
 
   // 4. Instantly trigger fetch on parameter updates
   useEffect(() => {
@@ -127,20 +137,29 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
 
       {/* ── Search & Filter Controls ── */}
       <motion.div variants={fadeUp} className="flex flex-col gap-4">
-        {/* Search Bar */}
-        <div className="relative w-full max-w-2xl">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <MagnifyingGlass
-              size={18}
-              className="text-(--color-text-secondary)"
+        {/* Search Bar & Format Dropdown */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-3xl">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlass
+                size={18}
+                className="text-(--color-text-secondary)"
+              />
+            </div>
+            <input
+              type="text"
+              className="w-full bg-(--color-bg-surface)/50 border border-(--color-border-default) rounded-lg pl-10 pr-4 py-3 text-(--color-text-primary) placeholder-(--color-text-muted) focus:outline-none focus:border-(--color-accent-500) transition-colors"
+              placeholder="Cari artis, kota asal (daerah), atau provinsi..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <input
-            type="text"
-            className="w-full bg-(--color-bg-surface)/50 border border-(--color-border-default) rounded-lg pl-10 pr-4 py-3 text-(--color-text-primary) placeholder-(--color-text-muted) focus:outline-none focus:border-(--color-accent-500) transition-colors"
-            placeholder="Cari artis, kota asal (daerah), atau provinsi..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+
+          <Dropdown
+            options={FORMAT_OPTIONS}
+            value={formatFilter}
+            onChange={setFormatFilter}
+            className="w-full sm:w-48 shrink-0"
           />
         </div>
 
@@ -279,13 +298,32 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
                         />
                       )}
                     </div>
-                    <Text
-                      variant="label"
-                      color="primary"
-                      className="truncate font-semibold group-hover:text-(--color-accent-400) transition-colors"
-                    >
-                      {artist.name}
-                    </Text>
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Text
+                          variant="label"
+                          color="primary"
+                          className="truncate font-semibold group-hover:text-(--color-accent-400) transition-colors"
+                        >
+                          {artist.name}
+                        </Text>
+                        {artist.artistType === "Group" ? (
+                          <Users
+                            size={12}
+                            weight="fill"
+                            className="text-teal-400 shrink-0 opacity-80"
+                            title="Band / Group"
+                          />
+                        ) : (
+                          <User
+                            size={12}
+                            weight="fill"
+                            className="text-indigo-400 shrink-0 opacity-80"
+                            title="Soloist"
+                          />
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Origin Column */}
