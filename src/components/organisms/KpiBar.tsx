@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { staggerContainer } from "@/lib/motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   UsersThree,
   ChartLineUp,
@@ -46,12 +45,7 @@ export function KpiBar({
   topGenre,
 }: KpiBarProps) {
   return (
-    <motion.div
-      className="flex gap-4 p-4 items-stretch"
-      variants={staggerContainer}
-      initial="hidden"
-      animate="visible"
-    >
+    <div className="flex gap-4 p-4 items-stretch">
       {/* Mode Selector Pillar */}
       <div className="flex flex-col gap-2 p-2 bg-[#121212]/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl min-w-[140px]">
         <button
@@ -80,34 +74,40 @@ export function KpiBar({
         </button>
       </div>
 
-      {/* Dynamic KPI Cards */}
+      {/* Dynamic KPI Cards with smooth cross-fade */}
       <div className="flex flex-1 gap-4 overflow-hidden relative">
-        {mapMode === 'density' ? (
-          <motion.div
-            key="density-kpis"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex flex-1 gap-4"
-          >
-            <KpiCard icon={UsersThree} label="Total Artists" value={totalArtists} />
-            <KpiCard icon={Buildings} label="Avg Artists/City" value={avgArtistsPerCity} decimals={1} />
-            <KpiCard icon={Fire} label="Most Dense City" value={0} formatter={() => mostDenseCity} />
-            <KpiCard icon={MapTrifold} label="Provinces" value={provincesCovered} />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="popularity-kpis"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex flex-1 gap-4"
-          >
-            <KpiCard icon={ChartLineUp} label="Avg. Popularity" value={avgPopularity} decimals={1} />
-            <KpiCard icon={Fire} label="Most Popular City" value={0} formatter={() => mostPopularCity} />
-            <KpiCard icon={Users} label="Total Followers" value={0} formatter={() => totalFollowers} />
-            <KpiCard icon={MusicNotes} label="Top Genre" value={0} formatter={() => topGenre} />
-          </motion.div>
-        )}
+        <AnimatePresence mode="wait">
+          {mapMode === 'density' ? (
+            <motion.div
+              key="density-kpis"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+              className="flex flex-1 gap-4"
+            >
+              <KpiCard icon={UsersThree} label="Total Artists" value={totalArtists} />
+              <KpiCard icon={Buildings} label="Avg Artists/City" value={avgArtistsPerCity} decimals={1} />
+              <KpiCard icon={Fire} label="Most Dense City" value={0} formatter={() => mostDenseCity} />
+              <KpiCard icon={MapTrifold} label="Provinces" value={provincesCovered} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="popularity-kpis"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+              className="flex flex-1 gap-4"
+            >
+              <KpiCard icon={ChartLineUp} label="Avg. Popularity" value={avgPopularity} decimals={1} />
+              <KpiCard icon={Fire} label="Most Popular City" value={0} formatter={() => mostPopularCity} />
+              <KpiCard icon={Users} label="Total Followers" value={0} formatter={() => totalFollowers} />
+              <KpiCard icon={MusicNotes} label="Top Genre" value={0} formatter={() => topGenre} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </motion.div>
+    </div>
   );
 }
