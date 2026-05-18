@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, GeoJSON, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Pane } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { cityCentroids } from "@/lib/config/cityCentroids";
@@ -164,36 +164,63 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
           }}
         />
 
-        {/* Proportional City Centroid Bubbles */}
-        {cityData.map((city) => {
-          // Scale radius logarithmically or proportionally. Min 6px, Max 30px.
-          const baseRadius = 6;
-          const ratio = city.totalFollowers / maxFollowers;
-          const calculatedRadius = baseRadius + (ratio * 24);
+        {/* Proportional City Centroid Bubbles on a Custom High Z-Index Pane */}
+        <Pane name="cities-pane" style={{ zIndex: 500 }}>
+          {cityData.map((city) => {
+            // Scale radius logarithmically or proportionally. Min 6px, Max 30px.
+            const baseRadius = 6;
+            const ratio = city.totalFollowers / maxFollowers;
+            const calculatedRadius = baseRadius + (ratio * 24);
 
-          return (
-            <CircleMarker
-              key={city.city}
-              center={city.coordinates}
-              radius={calculatedRadius}
-              pathOptions={{
-                color: "var(--color-accent-400)",
-                fillColor: "var(--color-accent-500)",
-                fillOpacity: 0.6,
-                weight: 2,
-              }}
-              eventHandlers={{
-                click: () => {
-                  if (onCityClick) onCityClick(city);
-                }
-              }}
-            />
-          );
-        })}
+            return (
+              <CircleMarker
+                key={city.city}
+                center={city.coordinates}
+                radius={calculatedRadius}
+                pane="cities-pane"
+                pathOptions={{
+                  color: "var(--color-accent-400)",
+                  fillColor: "var(--color-accent-500)",
+                  fillOpacity: 0.6,
+                  weight: 2,
+                }}
+                eventHandlers={{
+                  click: () => {
+                    if (onCityClick) onCityClick(city);
+                  },
+                  mouseover: (e) => {
+                    const marker = e.target;
+                    marker.setStyle({
+                      weight: 3,
+                      fillOpacity: 0.95,
+                      color: "var(--color-accent-300)",
+                      fillColor: "var(--color-accent-300)"
+                    });
+                  },
+                  mouseout: (e) => {
+                    const marker = e.target;
+                    marker.setStyle({
+                      color: "var(--color-accent-400)",
+                      fillColor: "var(--color-accent-500)",
+                      fillOpacity: 0.6,
+                      weight: 2,
+                    });
+                  }
+                }}
+              />
+            );
+          })}
+        </Pane>
       </MapContainer>
 
       {/* Global override for Leaflet popup styles to match glassmorphism */}
       <style jsx global>{`
+        .leaflet-interactive {
+          transition: stroke 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                      fill 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                      stroke-width 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                      fill-opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
         .leaflet-container {
           background: transparent !important;
           font-family: inherit;
