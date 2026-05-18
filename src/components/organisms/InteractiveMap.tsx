@@ -28,6 +28,13 @@ export interface CityAggregate {
   coordinates: [number, number];
 }
 
+// Heatmap Color Ramp
+function getHeatColor(count: number) {
+  if (count >= 10) return "#f43f5e"; // Rose / Coral (High Density)
+  if (count >= 4) return "#f59e0b";  // Amber / Orange (Medium Density)
+  return "#10b981";                  // Emerald / Teal (Low Density)
+}
+
 interface MapProps {
   onArtistClick?: (artist: ArtistData) => void;
   onCityClick?: (city: CityAggregate) => void;
@@ -173,6 +180,7 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
             const baseRadius = 6;
             const ratio = city.totalFollowers / maxFollowers;
             const calculatedRadius = baseRadius + (ratio * 24);
+            const heatColor = getHeatColor(city.count);
 
             return (
               <CircleMarker
@@ -181,8 +189,8 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
                 radius={calculatedRadius}
                 pane="cities-pane"
                 pathOptions={{
-                  color: "var(--color-accent-400)",
-                  fillColor: "var(--color-accent-500)",
+                  color: heatColor,
+                  fillColor: heatColor,
                   fillOpacity: 0.6,
                   weight: 2,
                 }}
@@ -195,16 +203,16 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
                     marker.setStyle({
                       weight: 4,
                       fillOpacity: 1,
-                      color: "#34d399",
-                      fillColor: "#34d399"
+                      color: heatColor,
+                      fillColor: heatColor
                     });
                     setHoveredCity(city);
                   },
                   mouseout: (e) => {
                     const marker = e.target;
                     marker.setStyle({
-                      color: "var(--color-accent-400)",
-                      fillColor: "var(--color-accent-500)",
+                      color: heatColor,
+                      fillColor: heatColor,
                       fillOpacity: 0.6,
                       weight: 2,
                     });
@@ -252,7 +260,12 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
           transition: stroke 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
                       fill 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
                       stroke-width 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
-                      fill-opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                      fill-opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                      filter 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.2));
+        }
+        .leaflet-interactive:hover {
+          filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
         }
         .leaflet-container {
           background: transparent !important;
