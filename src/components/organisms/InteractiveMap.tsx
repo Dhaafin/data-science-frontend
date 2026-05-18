@@ -28,19 +28,41 @@ export interface CityAggregate {
   coordinates: [number, number];
 }
 
-// Heatmap Color Ramp
-function getHeatColor(count: number) {
-  if (count >= 10) return "#f43f5e"; // Rose / Coral (High Density)
-  if (count >= 4) return "#f59e0b";  // Amber / Orange (Medium Density)
-  return "#10b981";                  // Emerald / Teal (Low Density)
+// Diverging Color Ramp (Blue -> Teal -> Red) based on divergence from a global average
+function getDivergingColor(value: number, avg: number, maxDiv: number) {
+  const divergence = value - avg; 
+  let t = divergence / maxDiv;
+  t = Math.max(-1, Math.min(1, t)); // clamp to [-1, 1]
+  
+  // Define our 3 color stops: Blue, Teal, Red
+  const c1 = [59, 130, 246];  // Blue (#3b82f6) - Lowest from average
+  const c2 = [20, 184, 166];  // Teal (#14b8a6) - Closer to average
+  const c3 = [239, 68, 68];   // Red (#ef4444) - Highest from average
+  
+  let r, g, b;
+  if (t < 0) {
+    const mappedT = t + 1; // scale -1..0 to 0..1
+    r = Math.round(c1[0] + (c2[0] - c1[0]) * mappedT);
+    g = Math.round(c1[1] + (c2[1] - c1[1]) * mappedT);
+    b = Math.round(c1[2] + (c2[2] - c1[2]) * mappedT);
+  } else {
+    const mappedT = t; // scale 0..1 to 0..1
+    r = Math.round(c2[0] + (c3[0] - c2[0]) * mappedT);
+    g = Math.round(c2[1] + (c3[1] - c2[1]) * mappedT);
+    b = Math.round(c2[2] + (c3[2] - c2[2]) * mappedT);
+  }
+  
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
-interface MapProps {
+export interface MapProps {
+  mapMode: 'density' | 'popularity';
   onArtistClick?: (artist: ArtistData) => void;
   onCityClick?: (city: CityAggregate) => void;
+  onDataLoaded?: (data: CityAggregate[]) => void;
 }
 
-export default function InteractiveMap({ onCityClick }: MapProps) {
+export default function InteractiveMap({ mapMode, onArtistClick, onCityClick, onDataLoaded }: MapProps) {
   const [geoJsonData, setGeoJsonData] = useState<GeoJsonObject | null>(null);
   const [cityData, setCityData] = useState<CityAggregate[]>([]);
   const [hoveredCity, setHoveredCity] = useState<CityAggregate | null>(null);
@@ -105,6 +127,7 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
           setGeoJsonData(geoJson);
           setCityData(finalCityData);
           setIsLoading(false);
+          if (onDataLoaded) onDataLoaded(finalCityData);
         }
       } catch (err) {
         console.error("Map Data Fetch Error:", err);
@@ -120,8 +143,28 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
     return null; // The MapPlaceholder wrapper handles the skeleton
   }
 
-  // Calculate max values for proportional scaling
+  // Calculate max values for proportional scaling and diverging colors
   const maxFollowers = Math.max(...cityData.map(c => c.totalFollowers), 1);
+  
+  // Calculate global average popularity and max divergence
+  const totalPop = cityData.reduce((acc, c) => acc + c.avgPopularity, 0);
+  const globalAvgPopularity = cityData.length > 0 ? totalPop / cityData.length : 50;
+  
+  let maxPopDivergence = 15; 
+  cityData.forEach(c => {
+    const div = Math.abs(c.avgPopularity - globalAvgPopularity);
+    if (div > maxPopDivergence) maxPopDivergence = div;
+  });
+
+  // Calculate global average density (count) and max divergence
+  const totalCount = cityData.reduce((acc, c) => acc + c.count, 0);
+  const globalAvgCount = cityData.length > 0 ? totalCount / cityData.length : 5;
+  
+  let maxCountDivergence = 5;
+  cityData.forEach(c => {
+    const div = Math.abs(c.count - globalAvgCount);
+    if (div > maxCountDivergence) maxCountDivergence = div;
+  });
 
   return (
     <div className="absolute inset-0 z-0">
@@ -180,7 +223,9 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
             const baseRadius = 6;
             const ratio = city.totalFollowers / maxFollowers;
             const calculatedRadius = baseRadius + (ratio * 24);
-            const heatColor = getHeatColor(city.count);
+            const heatColor = mapMode === 'popularity' 
+              ? getDivergingColor(city.avgPopularity, globalAvgPopularity, maxPopDivergence)
+              : getDivergingColor(city.count, globalAvgCount, maxCountDivergence);
 
             return (
               <CircleMarker

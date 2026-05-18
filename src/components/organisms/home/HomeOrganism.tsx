@@ -32,6 +32,8 @@ export default function HomeOrganism() {
   const [selectedCity, setSelectedCity] = useState<CityAggregate | null>(null);
   const [visibleCount, setVisibleCount] = useState(10);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [mapMode, setMapMode] = useState<'density' | 'popularity'>('density');
+  const [cityData, setCityData] = useState<CityAggregate[]>([]);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -122,6 +124,23 @@ export default function HomeOrganism() {
     return n.toFixed(0);
   };
 
+  // Dynamic KPI Calculations based on `cityData`
+  const avgArtistsPerCity = cityData.length > 0 ? (kpiStats?.totalArtists || 0) / cityData.length : 0;
+  
+  let mostDenseCity = "N/A";
+  let maxCount = 0;
+  let mostPopularCity = "N/A";
+  let maxPop = 0;
+  let rawTotalFollowers = 0;
+
+  cityData.forEach(c => {
+    if (c.count > maxCount) { maxCount = c.count; mostDenseCity = c.city; }
+    if (c.avgPopularity > maxPop) { maxPop = c.avgPopularity; mostPopularCity = c.city; }
+    rawTotalFollowers += c.totalFollowers;
+  });
+
+  const totalFollowersStr = formatFollowers(rawTotalFollowers);
+
   return (
     <div className="min-h-screen bg-(--color-bg-canvas) text-(--color-text-primary) flex flex-col relative">
       {/* Sticky top glassmorphic header */}
@@ -136,17 +155,25 @@ export default function HomeOrganism() {
       >
         {/* KPI overlay bar pinned to top of map area */}
         <KpiBar
+          mapMode={mapMode}
+          onModeChange={setMapMode}
           totalArtists={kpiStats?.totalArtists ?? 0}
-          avgPopularity={kpiStats?.avgPopularity ?? 0}
+          avgArtistsPerCity={avgArtistsPerCity}
+          mostDenseCity={mostDenseCity}
           provincesCovered={kpiStats?.provincesCovered ?? 0}
+          avgPopularity={kpiStats?.avgPopularity ?? 0}
+          mostPopularCity={mostPopularCity}
+          totalFollowers={totalFollowersStr}
           topGenre={kpiStats?.topGenre ?? "Loading..."}
         />
 
         {/* Map canvas — fills remaining height */}
         <div className="flex-1 min-h-0 relative rounded-lg overflow-hidden border border-(--color-border-default)">
           <MapPlaceholder 
+            mapMode={mapMode}
             onArtistClick={setSelectedArtist} 
             onCityClick={handleCitySelect} 
+            onDataLoaded={setCityData}
           />
         </div>
       </section>

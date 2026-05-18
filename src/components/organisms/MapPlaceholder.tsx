@@ -31,11 +31,13 @@ const InteractiveMap = dynamic(
 );
 
 interface MapWrapperProps {
+  mapMode: 'density' | 'popularity';
   onArtistClick: (artist: ArtistData) => void;
   onCityClick?: (city: CityAggregate) => void;
+  onDataLoaded?: (data: CityAggregate[]) => void;
 }
 
-export function MapPlaceholder({ onArtistClick, onCityClick }: MapWrapperProps) {
+export function MapPlaceholder({ mapMode, onArtistClick, onCityClick, onDataLoaded }: MapWrapperProps) {
   return (
     <motion.div
       className="relative w-full h-full overflow-hidden rounded-lg bg-(--color-bg-surface)/20 border border-(--color-border-default)"
@@ -56,7 +58,12 @@ export function MapPlaceholder({ onArtistClick, onCityClick }: MapWrapperProps) 
       />
       
       {/* Live React Leaflet Map */}
-      <InteractiveMap onArtistClick={onArtistClick} onCityClick={onCityClick} />
+      <InteractiveMap 
+        mapMode={mapMode}
+        onArtistClick={onArtistClick} 
+        onCityClick={onCityClick} 
+        onDataLoaded={onDataLoaded}
+      />
     </motion.div>
   );
 }
