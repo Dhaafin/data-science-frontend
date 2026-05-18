@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Pane } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Pane, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { cityCentroids } from "@/lib/config/cityCentroids";
@@ -191,10 +191,10 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
                   mouseover: (e) => {
                     const marker = e.target;
                     marker.setStyle({
-                      weight: 3,
-                      fillOpacity: 0.95,
-                      color: "var(--color-accent-300)",
-                      fillColor: "var(--color-accent-300)"
+                      weight: 4,
+                      fillOpacity: 1,
+                      color: "#ffffff",
+                      fillColor: "#ffffff"
                     });
                   },
                   mouseout: (e) => {
@@ -207,7 +207,19 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
                     });
                   }
                 }}
-              />
+              >
+                <Tooltip 
+                  direction="top" 
+                  offset={[0, -calculatedRadius]} 
+                  opacity={1}
+                  className="city-tooltip"
+                >
+                  <div className="flex flex-col items-center">
+                    <span className="font-bold text-white text-sm">{city.city}</span>
+                    <span className="text-xs text-white/70">{city.count} Artists</span>
+                  </div>
+                </Tooltip>
+              </CircleMarker>
             );
           })}
         </Pane>
@@ -243,6 +255,21 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
         }
         .leaflet-popup-close-button {
           color: white !important;
+        }
+        /* Custom Tooltip Styling */
+        .leaflet-tooltip.city-tooltip {
+          background: rgba(18, 18, 18, 0.85);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          color: white;
+          border-radius: 6px;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+          padding: 6px 12px;
+          font-family: inherit;
+        }
+        .leaflet-tooltip-top.city-tooltip::before {
+          border-top-color: rgba(18, 18, 18, 0.85);
         }
       `}</style>
     </div>
