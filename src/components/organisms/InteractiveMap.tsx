@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Pane, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Pane } from "react-leaflet";
+import { AnimatePresence, motion } from "framer-motion";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { cityCentroids } from "@/lib/config/cityCentroids";
@@ -35,6 +36,7 @@ interface MapProps {
 export default function InteractiveMap({ onCityClick }: MapProps) {
   const [geoJsonData, setGeoJsonData] = useState<GeoJsonObject | null>(null);
   const [cityData, setCityData] = useState<CityAggregate[]>([]);
+  const [hoveredCity, setHoveredCity] = useState<CityAggregate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch GeoJSON and Database map data
@@ -196,6 +198,7 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
                       color: "#34d399",
                       fillColor: "#34d399"
                     });
+                    setHoveredCity(city);
                   },
                   mouseout: (e) => {
                     const marker = e.target;
@@ -205,25 +208,43 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
                       fillOpacity: 0.6,
                       weight: 2,
                     });
+                    setHoveredCity(null);
                   }
                 }}
-              >
-                <Tooltip 
-                  direction="top" 
-                  offset={[0, -calculatedRadius]} 
-                  opacity={1}
-                  className="city-tooltip"
-                >
-                  <div className="flex flex-col items-center">
-                    <span className="font-bold text-white text-sm">{city.city}</span>
-                    <span className="text-xs text-white/70">{city.count} Artists</span>
-                  </div>
-                </Tooltip>
-              </CircleMarker>
+              />
             );
           })}
         </Pane>
       </MapContainer>
+
+      {/* Top Center HUD for Hovered City */}
+      <AnimatePresence>
+        {hoveredCity && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="absolute top-8 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none"
+          >
+            <div 
+              className="px-6 py-3 flex flex-col items-center rounded-xl shadow-2xl"
+              style={{
+                background: "rgba(18, 18, 18, 0.85)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(255, 255, 255, 0.15)"
+              }}
+            >
+              <span className="font-bold text-white text-lg tracking-wide">{hoveredCity.city}</span>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[#34d399] text-sm font-bold">{hoveredCity.count}</span>
+                <span className="text-white/60 text-xs uppercase tracking-wider font-medium">Artists Recorded</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Global override for Leaflet popup styles to match glassmorphism */}
       <style jsx global>{`
@@ -255,33 +276,6 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
         }
         .leaflet-popup-close-button {
           color: white !important;
-        }
-        /* Custom Tooltip Styling */
-        @keyframes tooltipPop {
-          0% {
-            opacity: 0;
-            transform: translate3d(0, 8px, 0) scale(0.95);
-          }
-          100% {
-            opacity: 1;
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-        }
-        .leaflet-tooltip.city-tooltip {
-          background: rgba(18, 18, 18, 0.85);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          color: white;
-          border-radius: 6px;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-          padding: 6px 12px;
-          font-family: inherit;
-          z-index: 1000 !important;
-          animation: tooltipPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-        .leaflet-tooltip-top.city-tooltip::before {
-          border-top-color: rgba(18, 18, 18, 0.85);
         }
       `}</style>
     </div>
