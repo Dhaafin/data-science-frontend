@@ -193,8 +193,8 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
                     marker.setStyle({
                       weight: 4,
                       fillOpacity: 1,
-                      color: "#ffffff",
-                      fillColor: "#ffffff"
+                      color: "#34d399",
+                      fillColor: "#34d399"
                     });
                   },
                   mouseout: (e) => {
@@ -257,6 +257,16 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
           color: white !important;
         }
         /* Custom Tooltip Styling */
+        @keyframes tooltipPop {
+          0% {
+            opacity: 0;
+            transform: translate3d(0, 8px, 0) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+        }
         .leaflet-tooltip.city-tooltip {
           background: rgba(18, 18, 18, 0.85);
           backdrop-filter: blur(8px);
@@ -267,6 +277,8 @@ export default function InteractiveMap({ onCityClick }: MapProps) {
           box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
           padding: 6px 12px;
           font-family: inherit;
+          z-index: 1000 !important;
+          animation: tooltipPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
         .leaflet-tooltip-top.city-tooltip::before {
           border-top-color: rgba(18, 18, 18, 0.85);
