@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { fadeUp } from "@/lib/motion";
 import {
-  GlobeHemisphereWest,
   MapPin,
   MusicNotes,
   ChartBar,
@@ -99,26 +99,21 @@ export function Header() {
         onClick={(e) => handleNavClick(e, "/", "#map")}
         className="flex items-center gap-2.5 cursor-pointer group"
       >
-        <div className="flex items-center justify-center size-8 rounded-lg bg-(--color-accent-500)/15 group-hover:bg-(--color-accent-500)/25 transition-colors">
-          <GlobeHemisphereWest
-            size={20}
-            weight="bold"
-            className="text-(--color-accent-500)"
-          />
-        </div>
-        <div className="flex flex-col leading-none">
-          <Text
-            as="span"
-            variant="label"
-            color="primary"
-            className="font-semibold tracking-tight"
-          >
-            Selasar Suara
-          </Text>
-          <Text as="span" variant="caption" color="muted">
-            Analisis Spasial
-          </Text>
-        </div>
+        <Image
+          src="/logo.png"
+          alt="Selasar Suara Logo"
+          width={32}
+          height={32}
+          className="object-contain"
+        />
+        <Text
+          as="span"
+          variant="label"
+          color="primary"
+          className="font-semibold tracking-tight"
+        >
+          Selasar Suara
+        </Text>
       </Link>
 
       {/* ── Navigation links (center) ── */}
