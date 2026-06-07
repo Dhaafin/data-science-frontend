@@ -10,9 +10,6 @@ import {
   ArtistDrawer,
   MapPlaceholder,
   DatabaseExplorer,
-  GenreDeepDive,
-  ComparativeView,
-  ArtistFormatShowcase,
   Drawer,
   Footer,
 } from "@/components/organisms";
@@ -184,24 +181,9 @@ export default function HomeOrganism() {
           Constrained to max-w-5xl for readability on wide screens
           ═══════════════════════════════════════════════════════ */}
       <main className="flex-1 w-full max-w-5xl mx-auto px-6 flex flex-col gap-16 py-12">
-        {/* Section 1.2: Artist Format & Collaboration Showcase */}
-        <section id="artist-format" className="scroll-mt-20">
-          <ArtistFormatShowcase />
-        </section>
-
         {/* Section 1.5: Database Explorer Directory */}
         <section id="explore" className="scroll-mt-20">
           <DatabaseExplorer onArtistSelect={setSelectedArtist} />
-        </section>
-
-        {/* Section 2: Genre Deep-Dive Hub */}
-        <section id="genres" className="scroll-mt-20">
-          <GenreDeepDive />
-        </section>
-
-        {/* Section 3: Regional Comparative Analytics */}
-        <section id="comparative" className="scroll-mt-20">
-          <ComparativeView />
         </section>
       </main>
 

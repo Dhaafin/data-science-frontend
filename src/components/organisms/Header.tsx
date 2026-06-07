@@ -25,12 +25,9 @@ import { Text } from "@/components/atoms";
  */
 
 const NAV_ITEMS = [
-  { id: "map", path: "/", hash: "#map", icon: MapPin, label: "Talent Map" },
-  { id: "artist-format", path: "/", hash: "#artist-format", icon: Users, label: "Format & Collab" },
-  { id: "explore", path: "/", hash: "#explore", icon: MagnifyingGlass, label: "Explore Database" },
-  { id: "genres", path: "/", hash: "#genres", icon: MusicNotes, label: "Genre Deep-Dive" },
-  { id: "comparative", path: "/", hash: "#comparative", icon: ChartBar, label: "Comparative" },
-  { id: "about", path: "/about", hash: "", icon: Info, label: "About" },
+  { id: "home", path: "/", icon: MapPin, label: "Home" },
+  { id: "insights", path: "/insights", icon: ChartBar, label: "Insights" },
+  { id: "about", path: "/about", icon: Info, label: "About" },
 ] as const;
 
 type SectionId = (typeof NAV_ITEMS)[number]["id"];
@@ -40,46 +37,26 @@ export function Header() {
   const [activeSection, setActiveSection] = useState<SectionId | string>("map");
   const [scrolled, setScrolled] = useState(false);
 
-  /* ── scroll-spy: track which section is in view ── */
+  /* ── Track active route ── */
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
-
-      if (pathname !== "/") {
-        setActiveSection(pathname.includes("about") ? "about" : "");
-        return;
-      }
-
-      const offsets = NAV_ITEMS.filter(n => n.hash).map(({ id }) => {
-        const el = document.getElementById(id);
-        if (!el) return { id, top: Infinity };
-        return { id, top: el.getBoundingClientRect().top };
-      });
-
-      const threshold = 120;
-      let current = "map";
-      for (const { id, top } of offsets) {
-        if (top <= threshold) current = id;
-      }
-      setActiveSection(current);
     };
+
+    if (pathname === "/") {
+      setActiveSection("home");
+    } else if (pathname.startsWith("/insights")) {
+      setActiveSection("insights");
+    } else if (pathname.startsWith("/about")) {
+      setActiveSection("about");
+    } else {
+      setActiveSection("");
+    }
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, [pathname]);
-
-  /* ── smooth-scroll to anchor ── */
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, path: string, hash: string) => {
-    if (pathname === path && hash) {
-      e.preventDefault();
-      const el = document.getElementById(hash.replace("#", ""));
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-        window.history.pushState({}, "", hash);
-      }
-    }
-  };
 
   return (
     <motion.header
@@ -97,8 +74,7 @@ export function Header() {
       <div className="max-w-5xl mx-auto w-full flex items-center justify-between">
       {/* ── Brand area (left) ── */}
       <Link
-        href="/#map"
-        onClick={(e) => handleNavClick(e, "/", "#map")}
+        href="/"
         className="flex items-center gap-2.5 cursor-pointer group"
       >
         <Image
@@ -120,13 +96,12 @@ export function Header() {
 
       {/* ── Navigation links (center) ── */}
       <nav className="flex items-center gap-1">
-        {NAV_ITEMS.map(({ id, path, hash, icon: IconComponent, label }) => {
+        {NAV_ITEMS.map(({ id, path, icon: IconComponent, label }) => {
           const isActive = activeSection === id;
           return (
             <Link
               key={id}
-              href={`${path}${hash}`}
-              onClick={(e) => handleNavClick(e, path, hash)}
+              href={path}
               className={[
                 "flex items-center gap-2 px-3.5 py-2 rounded-lg cursor-pointer",
                 "transition-colors duration-150 relative",

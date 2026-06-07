@@ -601,7 +601,43 @@ export const musicService = {
         avgFollowers: stats.band.count > 0 ? Math.round(stats.band.totalFollowers / stats.band.count) : 0,
         count: stats.band.count,
       },
-    };
+  },
+  
+  /**
+   * Fetches selective artist metrics (name, popularity, followers, primary_genre, type, location) for all artists to build the Stickiness Index.
+   */
+  async getStickinessData(): Promise<StickinessArtistEntry[]> {
+    const response = await supabaseApi.get<{
+      artist_name: string;
+      popularity: number | null;
+      followers: number | null;
+      primary_genre: string | null;
+      profile_picture: string | null;
+      artist_type: string | null;
+      origin_city: string | null;
+      origin_province: string | null;
+    }[]>(
+      "/music_data?select=artist_name,popularity,followers,primary_genre,profile_picture,artist_type,origin_city,origin_province&order=popularity.desc.nullslast"
+    );
+
+    return (response.data || []).map((item) => {
+      const followers = item.followers || 0;
+      const popularity = item.popularity || 0;
+      // SC = Followers / (Popularity + 1)
+      const sc = followers / (popularity + 1);
+
+      return {
+        name: item.artist_name,
+        popularity,
+        followers,
+        stickinessCoefficient: sc,
+        primaryGenre: item.primary_genre || "Lainnya",
+        profilePicture: item.profile_picture || "",
+        artistType: item.artist_type || "Person",
+        originCity: item.origin_city || "Unknown",
+        originProvince: item.origin_province || "Unknown",
+      };
+    });
   },
 };
 
@@ -647,4 +683,16 @@ export interface GenreFormatEntry {
   bandPct: number;
   isAnomaly: boolean;
   anomalyReason?: string;
+}
+
+export interface StickinessArtistEntry {
+  name: string;
+  popularity: number;
+  followers: number;
+  stickinessCoefficient: number;
+  primaryGenre: string;
+  profilePicture: string;
+  artistType: string;
+  originCity: string;
+  originProvince: string;
 }
