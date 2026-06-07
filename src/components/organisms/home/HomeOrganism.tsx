@@ -193,79 +193,85 @@ export default function HomeOrganism() {
           ═══════════════════════════════════════════════════════ */}
       <section
         id="map"
-        className="max-w-5xl mx-auto w-full px-6 pt-20 pb-4 flex flex-col h-[80vh]"
+        className="max-w-5xl mx-auto w-full px-6 pt-20 pb-4 flex flex-col h-[90vh]"
       >
-        {/* KPI overlay bar pinned to top of map area */}
-        <KpiBar
-          mapMode={mapMode}
-          onModeChange={setMapMode}
-          totalArtists={kpiStats?.totalArtists ?? 0}
-          avgArtistsPerCity={avgArtistsPerCity}
-          mostDenseCity={mostDenseCity}
-          provincesCovered={kpiStats?.provincesCovered ?? 0}
-          avgPopularity={kpiStats?.avgPopularity ?? 0}
-          mostPopularCity={mostPopularCity}
-          totalFollowers={totalFollowersStr}
-          topGenre={kpiStats?.topGenre ?? "Loading..."}
-        />
+        {/* Unified Map Control Center & KPI Station */}
+        <div className="bg-[#121212]/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl flex flex-col mb-4 overflow-hidden">
+          {/* Top Panel: KPIs & Mode selector */}
+          <KpiBar
+            mapMode={mapMode}
+            onModeChange={setMapMode}
+            totalArtists={kpiStats?.totalArtists ?? 0}
+            avgArtistsPerCity={avgArtistsPerCity}
+            mostDenseCity={mostDenseCity}
+            provincesCovered={kpiStats?.provincesCovered ?? 0}
+            avgPopularity={kpiStats?.avgPopularity ?? 0}
+            mostPopularCity={mostPopularCity}
+            totalFollowers={totalFollowersStr}
+            topGenre={kpiStats?.topGenre ?? "Loading..."}
+          />
 
-        {/* Glassmorphic Filter Controls Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 p-4 mb-4 bg-neutral-900/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl">
-          {/* Left: Genre Selector */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-white/50 tracking-wide uppercase">Genre Utama</span>
-            <Dropdown
-              options={genreOptions}
-              value={selectedGenre}
-              onChange={setSelectedGenre}
-              className="w-48"
-            />
-          </div>
+          {/* Separator line */}
+          <div className="h-[1px] bg-white/10 mx-4" />
 
-          {/* Center: Format Selector */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-white/50 tracking-wide uppercase">Format</span>
-            <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
-              {[
-                { label: "Semua", value: "Semua" },
-                { label: "Soloist", value: "Soloist" },
-                { label: "Band", value: "Band" }
-              ].map((fmt) => (
-                <button
-                  key={fmt.value}
-                  onClick={() => setSelectedFormat(fmt.value)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                    selectedFormat === fmt.value
-                      ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
-                      : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
-                  }`}
-                >
-                  {fmt.label}
-                </button>
-              ))}
+          {/* Bottom Panel: Filter Controls (Nested seamlessly) */}
+          <div className="flex flex-wrap items-center justify-between gap-6 p-4 pt-2">
+            {/* Left: Genre Selector */}
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Genre Utama</span>
+              <Dropdown
+                options={genreOptions}
+                value={selectedGenre}
+                onChange={setSelectedGenre}
+                className="w-48"
+              />
             </div>
-          </div>
 
-          {/* Right: Sizing Selector */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-white/50 tracking-wide uppercase">Ukuran Gelembung</span>
-            <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
-              {[
-                { label: "Kepadatan Artis", value: "count" },
-                { label: "Reach Followers", value: "followers" }
-              ].map((metric) => (
-                <button
-                  key={metric.value}
-                  onClick={() => setRadiusMetric(metric.value as 'count' | 'followers')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                    radiusMetric === metric.value
-                      ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
-                      : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
-                  }`}
-                >
-                  {metric.label}
-                </button>
-              ))}
+            {/* Center: Format Selector */}
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Format</span>
+              <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
+                {[
+                  { label: "Semua", value: "Semua" },
+                  { label: "Soloist", value: "Soloist" },
+                  { label: "Band", value: "Band" }
+                ].map((fmt) => (
+                  <button
+                    key={fmt.value}
+                    onClick={() => setSelectedFormat(fmt.value)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                      selectedFormat === fmt.value
+                        ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
+                        : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                    }`}
+                  >
+                    {fmt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Sizing Selector */}
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Ukuran Gelembung</span>
+              <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
+                {[
+                  { label: "Kepadatan Artis", value: "count" },
+                  { label: "Reach Followers", value: "followers" }
+                ].map((metric) => (
+                  <button
+                    key={metric.value}
+                    onClick={() => setRadiusMetric(metric.value as 'count' | 'followers')}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                      radiusMetric === metric.value
+                        ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
+                        : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                    }`}
+                  >
+                    {metric.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
