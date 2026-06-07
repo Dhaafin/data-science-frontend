@@ -7,10 +7,10 @@ import {
   Crown,
   Flame,
   Heart,
-  Sparkles,
+  Sparkle,
   MagnifyingGlass,
   Funnel,
-  TrendingUp,
+  TrendUp,
   User,
   Users,
   Info,
@@ -24,6 +24,12 @@ import { Dropdown } from "@/components/molecules";
 import { musicService, StickinessArtistEntry } from "@/lib/api/musicService";
 import type { ArtistData } from "@/components/organisms/Drawer";
 
+interface MappedArtist extends StickinessArtistEntry {
+  quadrant: string;
+  isActive: boolean;
+  isFaded: boolean;
+}
+
 interface PopularityFollowerShowcaseProps {
   onArtistSelect?: (artist: ArtistData) => void;
 }
@@ -33,7 +39,7 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedGenre, setSelectedGenre] = useState<string>("Semua");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [hoveredArtist, setHoveredArtist] = useState<StickinessArtistEntry | null>(null);
+  const [hoveredArtist, setHoveredArtist] = useState<MappedArtist | null>(null);
   const [hoveredPosition, setHoveredPosition] = useState<{ x: number; y: number } | null>(null);
   
   // Dynamic highlighting of quadrants
@@ -199,7 +205,7 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
       Legends: { count: 0, color: "var(--color-data-1)", icon: Crown },
       "Viral Hits": { count: 0, color: "var(--color-data-4)", icon: Flame },
       "Cult Classics": { count: 0, color: "var(--color-data-3)", icon: Heart },
-      "Emerging Talents": { count: 0, color: "var(--color-text-muted)", icon: Sparkles },
+      "Emerging Talents": { count: 0, color: "var(--color-text-muted)", icon: Sparkle },
     };
 
     filteredArtists.forEach(art => {
@@ -296,7 +302,7 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
       {/* ── Section Header ── */}
       <motion.div variants={fadeUp} className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <TrendingUp size={20} weight="bold" className="text-(--color-accent-500)" />
+          <TrendUp size={20} weight="bold" className="text-(--color-accent-500)" />
           <Text as="h1" variant="title" color="primary">
             Fans Loyalty &amp; Stickiness Index
           </Text>
@@ -632,7 +638,7 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
                       </div>
                     </div>
 
-                    <Divider spacing="none" />
+                    <Divider spacing="sm" />
 
                     {/* Analytics stats */}
                     <div className="grid grid-cols-2 gap-2 text-left">
