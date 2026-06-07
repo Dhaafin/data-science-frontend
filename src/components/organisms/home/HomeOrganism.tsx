@@ -12,6 +12,7 @@ import {
   DatabaseExplorer,
   GenreDeepDive,
   ComparativeView,
+  ArtistFormatShowcase,
   Drawer,
   Footer,
 } from "@/components/organisms";
@@ -196,6 +197,11 @@ export default function HomeOrganism() {
         {/* Section 3: Regional Comparative Analytics */}
         <section id="comparative" className="scroll-mt-20">
           <ComparativeView />
+        </section>
+
+        {/* Section 3.5: Artist Format & Collaboration Showcase */}
+        <section id="artist-format" className="scroll-mt-20">
+          <ArtistFormatShowcase />
         </section>
       </main>
 

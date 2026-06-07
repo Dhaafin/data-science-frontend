@@ -417,7 +417,191 @@ export const musicService = {
       });
 
     // Sort by artist count descending
+    // Sort by artist count descending
     return comparisonData.sort((a, b) => b.artistCount - a.artistCount);
+  },
+
+  /**
+   * Fetches and aggregates local Collaboration Index (CI) and archetype per city.
+   */
+  async getCollaborationStats(): Promise<CollaborationEntry[]> {
+    const response = await supabaseApi.get<{ origin_city: string | null; origin_province: string | null; artist_type: string | null; primary_genre: string | null }[]>(
+      "/music_data?select=origin_city,origin_province,artist_type,primary_genre"
+    );
+
+    const data = response.data || [];
+    const cityMap = new Map<string, {
+      city: string;
+      province: string;
+      soloCount: number;
+      bandCount: number;
+      genres: Map<string, number>;
+    }>();
+
+    data.forEach((item) => {
+      const city = item.origin_city || "Unknown";
+      const province = item.origin_province || "Unknown";
+      if (city === "Unknown") return;
+
+      const current = cityMap.get(city) || {
+        city,
+        province,
+        soloCount: 0,
+        bandCount: 0,
+        genres: new Map<string, number>(),
+      };
+
+      if (item.artist_type === "Group") {
+        current.bandCount += 1;
+      } else {
+        current.soloCount += 1;
+      }
+
+      const pg = item.primary_genre ? item.primary_genre.trim() : "";
+      if (pg) {
+        current.genres.set(pg, (current.genres.get(pg) || 0) + 1);
+      }
+
+      cityMap.set(city, current);
+    });
+
+    return Array.from(cityMap.values()).map((stats) => {
+      const totalCount = stats.soloCount + stats.bandCount;
+      const collaborationIndex = totalCount > 0 ? Math.round((stats.bandCount / totalCount) * 100) : 0;
+      
+      let topGenre = "Pop";
+      let maxCount = 0;
+      stats.genres.forEach((count, gen) => {
+        if (count > maxCount) {
+          maxCount = count;
+          topGenre = gen;
+        }
+      });
+
+      let archetype: SceneArchetype = "Evolving Music Scene";
+      if (collaborationIndex >= 65) archetype = "Indie Rehearsal Capital";
+      else if (collaborationIndex >= 50) archetype = "Emerging Band Scene";
+      else if (collaborationIndex >= 35) archetype = "Evolving Music Scene";
+      else if (collaborationIndex >= 20) archetype = "Commercial Artist Hub";
+      else archetype = "Vocalist & Studio Epicenter";
+
+      return {
+        city: stats.city,
+        province: stats.province,
+        soloCount: stats.soloCount,
+        bandCount: stats.bandCount,
+        totalCount,
+        collaborationIndex,
+        archetype,
+        topGenre,
+      };
+    }).sort((a, b) => b.totalCount - a.totalCount);
+  },
+
+  /**
+   * Fetches and aggregates the cross-tabulation matrix of parent genre vs soloist/band format.
+   */
+  async getGenreFormatMatrix(): Promise<GenreFormatEntry[]> {
+    const response = await supabaseApi.get<{ primary_genre: string | null; artist_type: string | null }[]>(
+      "/music_data?select=primary_genre,artist_type"
+    );
+
+    const data = response.data || [];
+    const genreMap = new Map<string, {
+      genre: string;
+      soloCount: number;
+      bandCount: number;
+    }>();
+
+    data.forEach((item) => {
+      const pg = item.primary_genre ? item.primary_genre.trim() : "";
+      if (!pg) return;
+
+      const g = pg
+        .split(" ")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ");
+
+      const current = genreMap.get(g) || {
+        genre: g,
+        soloCount: 0,
+        bandCount: 0,
+      };
+
+      if (item.artist_type === "Group") {
+        current.bandCount += 1;
+      } else {
+        current.soloCount += 1;
+      }
+
+      genreMap.set(g, current);
+    });
+
+    return Array.from(genreMap.values()).map((stats) => {
+      const total = stats.soloCount + stats.bandCount;
+      const soloPct = total > 0 ? Math.round((stats.soloCount / total) * 100) : 0;
+      const bandPct = total > 0 ? Math.round((stats.bandCount / total) * 100) : 0;
+
+      let isAnomaly = false;
+      let anomalyReason = "";
+
+      if (stats.genre === "Koplo" && bandPct > 60) {
+        isAnomaly = true;
+        anomalyReason = "Rasio grup tinggi pada genre dangdut turunan Koplo menunjukkan peralihan budaya kolektif.";
+      } else if (stats.genre === "Indie" && Math.abs(soloPct - bandPct) <= 15) {
+        isAnomaly = true;
+        anomalyReason = "Distribusi Solo/Band yang hampir seimbang menunjukkan fleksibilitas ekosistem indie.";
+      }
+
+      return {
+        genre: stats.genre,
+        soloCount: stats.soloCount,
+        bandCount: stats.bandCount,
+        total,
+        soloPct,
+        bandPct,
+        isAnomaly,
+        anomalyReason,
+      };
+    }).sort((a, b) => b.total - a.total);
+  },
+
+  /**
+   * Fetches and compares average popularity and followers for soloists vs groups.
+   */
+  async getFormatStreamingComparison(): Promise<{
+    solo: { avgPopularity: number; avgFollowers: number; count: number };
+    band: { avgPopularity: number; avgFollowers: number; count: number };
+  }> {
+    const response = await supabaseApi.get<{ artist_type: string | null; popularity: number; followers: number }[]>(
+      "/music_data?select=artist_type,popularity,followers"
+    );
+
+    const data = response.data || [];
+    const stats = {
+      solo: { totalPop: 0, totalFollowers: 0, count: 0 },
+      band: { totalPop: 0, totalFollowers: 0, count: 0 },
+    };
+
+    data.forEach((item) => {
+      const type = item.artist_type === "Group" ? "band" : "solo";
+      stats[type].count += 1;
+      stats[type].totalPop += item.popularity || 0;
+      stats[type].totalFollowers += item.followers || 0;
+    });
+
+    return {
+      solo: {
+        avgPopularity: stats.solo.count > 0 ? Math.round(stats.solo.totalPop / stats.solo.count) : 0,
+        avgFollowers: stats.solo.count > 0 ? Math.round(stats.solo.totalFollowers / stats.solo.count) : 0,
+        count: stats.solo.count,
+      },
+      band: {
+        avgPopularity: stats.band.count > 0 ? Math.round(stats.band.totalPop / stats.band.count) : 0,
+        avgFollowers: stats.band.count > 0 ? Math.round(stats.band.totalFollowers / stats.band.count) : 0,
+        count: stats.band.count,
+      },
+    };
   },
 };
 
@@ -434,4 +618,33 @@ export interface ProvinceEntry {
   artistCount: number;
   avgPopularity: number;
   topGenre: string;
+}
+
+export type SceneArchetype =
+  | "Indie Rehearsal Capital"
+  | "Emerging Band Scene"
+  | "Evolving Music Scene"
+  | "Commercial Artist Hub"
+  | "Vocalist & Studio Epicenter";
+
+export interface CollaborationEntry {
+  city: string;
+  province: string;
+  soloCount: number;
+  bandCount: number;
+  totalCount: number;
+  collaborationIndex: number;
+  archetype: SceneArchetype;
+  topGenre: string;
+}
+
+export interface GenreFormatEntry {
+  genre: string;
+  soloCount: number;
+  bandCount: number;
+  total: number;
+  soloPct: number;
+  bandPct: number;
+  isAnomaly: boolean;
+  anomalyReason?: string;
 }
