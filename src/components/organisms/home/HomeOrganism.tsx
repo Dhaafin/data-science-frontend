@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp, CircleNotch } from "@phosphor-icons/react";
 import { musicService } from "@/lib/api/musicService";
@@ -139,6 +139,33 @@ export default function HomeOrganism() {
 
   const totalFollowersStr = formatFollowers(rawTotalFollowers);
 
+  // Genre distribution inside the active city drawer
+  const cityGenreDistribution = useMemo(() => {
+    if (!selectedCity) return [];
+    const counts: Record<string, number> = {};
+    selectedCity.topArtists.forEach((art) => {
+      const g = art.primaryGenre || "Lainnya";
+      counts[g] = (counts[g] || 0) + 1;
+    });
+
+    const total = selectedCity.topArtists.length;
+    return Object.entries(counts)
+      .map(([name, count]) => {
+        const percentage = Math.round((count / total) * 100);
+        return { name, count, percentage };
+      })
+      .sort((a, b) => b.count - a.count);
+  }, [selectedCity]);
+
+  const cityCollaborationIndex = selectedCity?.count ? Math.round((selectedCity.bandCount / selectedCity.count) * 100) : 0;
+  
+  let cityArchetype = "Evolving Music Scene";
+  if (cityCollaborationIndex >= 65) cityArchetype = "Indie Rehearsal Capital";
+  else if (cityCollaborationIndex >= 50) cityArchetype = "Emerging Band Scene";
+  else if (cityCollaborationIndex >= 35) cityArchetype = "Evolving Music Scene";
+  else if (cityCollaborationIndex >= 20) cityArchetype = "Commercial Artist Hub";
+  else cityArchetype = "Vocalist & Studio Epicenter";
+
   return (
     <div className="min-h-screen bg-(--color-bg-canvas) text-(--color-text-primary) flex flex-col relative">
       {/* Sticky top glassmorphic header */}
@@ -235,6 +262,65 @@ export default function HomeOrganism() {
                   formatter={formatFollowers}
                   className="text-lg font-bold text-white tracking-tight"
                 />
+              </div>
+            </div>
+
+            {/* Archetype Badge block */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl border border-(--color-border-default) bg-(--color-bg-surface)/10">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-(--color-text-secondary) uppercase tracking-wider font-semibold">Scene Archetype</span>
+                <span className="text-sm font-bold text-white mt-0.5">{cityArchetype}</span>
+              </div>
+              <Badge color="accent" className="font-semibold text-xs py-1">
+                {cityCollaborationIndex}% Band Format
+              </Badge>
+            </div>
+
+            {/* Genre Distribution */}
+            <div className="flex flex-col gap-3">
+              <Text variant="label" className="font-semibold text-white/95">
+                Distribusi Genre Utama
+              </Text>
+              
+              <div className="h-2.5 w-full rounded-full overflow-hidden flex bg-white/5 border border-white/5">
+                {cityGenreDistribution.map((genre, idx) => {
+                  const colors = [
+                    "bg-(--color-accent-500)",
+                    "bg-sky-500",
+                    "bg-indigo-500",
+                    "bg-amber-500",
+                    "bg-emerald-500",
+                  ];
+                  const colorClass = colors[idx % colors.length];
+                  return (
+                    <div
+                      key={genre.name}
+                      style={{ width: `${genre.percentage}%` }}
+                      className={`${colorClass} h-full transition-all`}
+                      title={`${genre.name}: ${genre.percentage}%`}
+                    />
+                  );
+                })}
+              </div>
+              
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-1">
+                {cityGenreDistribution.slice(0, 4).map((genre, idx) => {
+                  const dotColors = [
+                    "bg-(--color-accent-500)",
+                    "bg-sky-500",
+                    "bg-indigo-500",
+                    "bg-amber-500",
+                    "bg-emerald-500",
+                  ];
+                  const dotColor = dotColors[idx % dotColors.length];
+                  return (
+                    <div key={genre.name} className="flex items-center gap-1.5 text-xs text-(--color-text-secondary)">
+                      <span className={`size-2 rounded-full ${dotColor}`} />
+                      <span className="font-medium text-white/80">{genre.name}</span>
+                      <span>({genre.percentage}%)</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
