@@ -13,6 +13,7 @@ export interface DatabaseArtist {
   popularity: number;
   followers: number;
   genre: string[];
+  primary_genre?: string;
   artist_type?: string;
 }
 
@@ -28,6 +29,7 @@ export function mapDbToArtistData(dbArtist: DatabaseArtist): ArtistData {
     popularity: dbArtist.popularity,
     followers: dbArtist.followers,
     genres: dbArtist.genre || [],
+    primaryGenre: dbArtist.primary_genre || "",
     artistType: dbArtist.artist_type || "Person",
   };
 }
@@ -162,9 +164,8 @@ export const musicService = {
         const f = encodeURIComponent(`*${filter}*`);
         filters.push(`origin_province=ilike.${f}`);
       } else {
-        const subGenres = getGenreOverlapList(filter);
-        const listStr = subGenres.map(sg => encodeURIComponent(sg)).join(",");
-        filters.push(`genre=ov.{${listStr}}`);
+        const f = encodeURIComponent(filter);
+        filters.push(`primary_genre=ilike.${f}`);
       }
     }
 
@@ -207,8 +208,8 @@ export const musicService = {
    */
   async getGenreStats(): Promise<GenreEntry[]> {
     // Only select required columns for aggregation to maximize speed
-    const response = await supabaseApi.get<{ genre: string[]; popularity: number }[]>(
-      "/music_data?select=genre,popularity",
+    const response = await supabaseApi.get<{ primary_genre: string | null; popularity: number }[]>(
+      "/music_data?select=primary_genre,popularity",
     );
 
     const data = response.data;
@@ -219,26 +220,20 @@ export const musicService = {
     const genreMap = new Map<string, { totalPop: number; count: number }>();
 
     data.forEach((artist) => {
-      const genres = artist.genre || [];
+      const pg = artist.primary_genre ? artist.primary_genre.trim() : "";
+      if (!pg) return;
+
+      // Standardize capitalization (e.g. 'indonesian pop' -> 'Indonesian Pop')
+      const g = pg
+        .split(" ")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ");
+
       const pop = artist.popularity || 0;
-
-      // Ensure we only process unique genres per artist 
-      // (sometimes an artist might have 'pop' and 'indonesian pop' which we can map to a parent if needed, 
-      // but here we just aggregate exactly what is in the DB, capitalizing nicely).
-      const uniqueGenres = Array.from(new Set(genres.map(g => {
-        // Standardize capitalization (e.g. 'indonesian pop' -> 'Indonesian Pop')
-        return g
-          .split(" ")
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-          .join(" ");
-      })));
-
-      uniqueGenres.forEach((g) => {
-        const current = genreMap.get(g) || { totalPop: 0, count: 0 };
-        genreMap.set(g, {
-          totalPop: current.totalPop + pop,
-          count: current.count + 1,
-        });
+      const current = genreMap.get(g) || { totalPop: 0, count: 0 };
+      genreMap.set(g, {
+        totalPop: current.totalPop + pop,
+        count: current.count + 1,
       });
     });
 
@@ -272,8 +267,8 @@ export const musicService = {
     provincesCovered: number;
     topGenre: string;
   }> {
-    const response = await supabaseApi.get<{ origin_province: string; popularity: number; genre: string[] }[]>(
-      "/music_data?select=origin_province,popularity,genre"
+    const response = await supabaseApi.get<{ origin_province: string; popularity: number; primary_genre: string | null }[]>(
+      "/music_data?select=origin_province,popularity,primary_genre"
     );
 
     const data = response.data;
@@ -288,12 +283,10 @@ export const musicService = {
     // Calculate top genre frequency
     const genreCounts = new Map<string, number>();
     data.forEach((item) => {
-      (item.genre || []).forEach((g) => {
-        const normalized = g.toLowerCase().trim();
-        if (normalized) {
-          genreCounts.set(normalized, (genreCounts.get(normalized) || 0) + 1);
-        }
-      });
+      const pg = item.primary_genre ? item.primary_genre.toLowerCase().trim() : "";
+      if (pg) {
+        genreCounts.set(pg, (genreCounts.get(pg) || 0) + 1);
+      }
     });
 
     let topGenre = "N/A";
@@ -315,7 +308,7 @@ export const musicService = {
       totalArtists,
       avgPopularity,
       provincesCovered,
-      topGenre: topGenre || "Indo Pop",
+      topGenre: topGenre || "Pop",
     };
   },
 
@@ -323,8 +316,8 @@ export const musicService = {
    * Fetches and aggregates live province-level comparative metrics.
    */
   async getProvinceComparisonStats(): Promise<ProvinceEntry[]> {
-    const response = await supabaseApi.get<{ origin_province: string; popularity: number; genre: string[] }[]>(
-      "/music_data?select=origin_province,popularity,genre"
+    const response = await supabaseApi.get<{ origin_province: string; popularity: number; primary_genre: string | null }[]>(
+      "/music_data?select=origin_province,popularity,primary_genre"
     );
 
     const data = response.data;
@@ -352,12 +345,10 @@ export const musicService = {
       current.artistCount += 1;
       current.totalPopularity += popularity;
 
-      (item.genre || []).forEach((g) => {
-        const normalized = g.trim();
-        if (normalized) {
-          current.genres.set(normalized, (current.genres.get(normalized) || 0) + 1);
-        }
-      });
+      const pg = item.primary_genre ? item.primary_genre.trim() : "";
+      if (pg) {
+        current.genres.set(pg, (current.genres.get(pg) || 0) + 1);
+      }
 
       provinceMap.set(province, current);
     });

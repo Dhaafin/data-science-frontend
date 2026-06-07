@@ -14,6 +14,7 @@ export interface ArtistData {
   popularity: number;
   followers: number;
   genres: string[];
+  primaryGenre?: string;
   artistType?: string;
 }
 
@@ -172,9 +173,11 @@ export function ArtistDrawer({ artist, onClose }: ArtistDrawerProps) {
               </motion.div>
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <Badge color="accent" className="text-[9px] uppercase tracking-wider font-bold">
-                    Musisi Staging
-                  </Badge>
+                  {artist.primaryGenre && (
+                    <Badge color="accent" className="text-[9px] uppercase tracking-wider font-bold">
+                      {artist.primaryGenre}
+                    </Badge>
+                  )}
                   {artist.artistType === "Group" ? (
                     <Badge color="info" className="flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20">
                       <Users size={10} weight="bold" className="shrink-0" />
@@ -223,10 +226,10 @@ export function ArtistDrawer({ artist, onClose }: ArtistDrawerProps) {
 
           <Divider spacing="sm" />
 
-          {/* Genres */}
+          {/* Tags */}
           <div className="flex flex-col gap-2">
             <Text variant="caption" color="secondary">
-              Genres
+              Tags
             </Text>
             <div className="flex flex-wrap gap-1.5">
               {artist.genres.map((genre) => (

@@ -83,7 +83,7 @@ export default function InteractiveMap({ mapMode, onArtistClick, onCityClick, on
         const { supabaseApi } = await import("@/lib/api/client");
         const { mapDbToArtistData } = await import("@/lib/api/musicService");
         const dbResponse = await supabaseApi.get(
-          "/music_data?select=id,profile_picture,artist_name,origin_city,origin_province,popularity,followers,genre,artist_type&is_indonesian=eq.true"
+          "/music_data?select=id,profile_picture,artist_name,origin_city,origin_province,popularity,followers,genre,artist_type,primary_genre&is_indonesian=eq.true"
         );
 
         // 3. Aggregate data by City

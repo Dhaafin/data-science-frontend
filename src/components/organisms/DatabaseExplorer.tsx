@@ -268,7 +268,7 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
                 color="secondary"
                 className="uppercase tracking-wider"
               >
-                Top Genre
+                Genre
               </Text>
             </div>
             <div className="col-span-4 sm:col-span-4 md:col-span-2 lg:col-span-2 text-right">
@@ -362,14 +362,13 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
 
                   {/* Genre Column */}
                   <div className="col-span-3 lg:col-span-4 hidden md:flex items-center gap-1.5 flex-wrap">
-                    {artist.genres.slice(0, 2).map((genre) => (
-                      <Badge key={genre} color="info">
-                        {genre}
+                    {artist.primaryGenre ? (
+                      <Badge color="info">
+                        {artist.primaryGenre}
                       </Badge>
-                    ))}
-                    {artist.genres.length > 2 && (
+                    ) : (
                       <Text variant="caption" color="muted">
-                        +{artist.genres.length - 2}
+                        —
                       </Text>
                     )}
                   </div>
