@@ -672,171 +672,181 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
         </motion.div>
 
         {/* Quick Insights & Quadrant Stats Column */}
-        <motion.div variants={fadeUp} className="col-span-1 flex flex-col gap-6">
-          
+        <motion.div variants={fadeUp} className="col-span-1">
           {/* Quadrant filter breakdown cards */}
-          <GlassCard className="p-4 flex flex-col gap-3">
-            <Text variant="heading" color="primary" className="font-bold text-sm">
-              Distribusi Kuadran
-            </Text>
-            
-            <div className="flex flex-col gap-2">
-              {Object.entries(quadrantStats).map(([name, stat]) => {
-                const Icon = stat.icon;
-                const isSelected = highlightedQuadrant === name;
-                
-                return (
-                  <button
-                    key={name}
-                    onClick={() => setHighlightedQuadrant(isSelected ? null : name)}
-                    className={`flex items-center justify-between p-2.5 rounded-lg border transition-all text-left cursor-pointer group ${
-                      isSelected
-                        ? "border-(--color-border-accent) bg-(--color-accent-500)/10 shadow-md"
-                        : "border-(--color-border-default) bg-(--color-bg-surface)/20 hover:bg-(--color-bg-surface)/40 hover:border-white/10"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className="p-1.5 rounded-md flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: `${stat.color}15`, color: stat.color }}
-                      >
-                        <Icon size={14} weight={isSelected ? "fill" : "bold"} />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-white group-hover:text-(--color-accent-400) transition-colors">
-                          {name}
-                        </span>
-                        <span className="text-[9px] text-(--color-text-secondary) mt-0.5">
-                          {name === "Legends" && "Populer & Pengikut Besar"}
-                          {name === "Viral Hits" && "Populer Tapi Pengikut Minim"}
-                          {name === "Cult Classics" && "Militan, Pengikut Relatif Tinggi"}
-                          {name === "Emerging Talents" && "Musisi Berkembang / Baru"}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-extrabold font-mono text-white">
-                        {stat.count}
-                      </span>
-                      {isSelected && (
-                        <Check size={12} weight="bold" className="text-(--color-accent-400)" />
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </GlassCard>
-
-          {/* Cult Classics Leaderboard Card */}
-          <GlassCard className="p-4 flex flex-col gap-3 flex-1">
-            <div className="flex items-center gap-1.5">
-              <Heart size={16} weight="fill" className="text-(--color-data-3)" />
+          <GlassCard className="p-4 flex flex-col gap-3 h-full justify-between">
+            <div className="flex flex-col gap-3">
               <Text variant="heading" color="primary" className="font-bold text-sm">
-                Top Cult Classics (Loyalitas Tinggi)
+                Distribusi Kuadran
               </Text>
+              
+              <div className="flex flex-col gap-2">
+                {Object.entries(quadrantStats).map(([name, stat]) => {
+                  const Icon = stat.icon;
+                  const isSelected = highlightedQuadrant === name;
+                  
+                  return (
+                    <button
+                      key={name}
+                      onClick={() => setHighlightedQuadrant(isSelected ? null : name)}
+                      className={`flex items-center justify-between p-2.5 rounded-lg border transition-all text-left cursor-pointer group ${
+                        isSelected
+                          ? "border-(--color-border-accent) bg-(--color-accent-500)/10 shadow-md"
+                          : "border-(--color-border-default) bg-(--color-bg-surface)/20 hover:bg-(--color-bg-surface)/40 hover:border-white/10"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="p-1.5 rounded-md flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: `${stat.color}15`, color: stat.color }}
+                        >
+                          <Icon size={14} weight={isSelected ? "fill" : "bold"} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-white group-hover:text-(--color-accent-400) transition-colors">
+                            {name}
+                          </span>
+                          <span className="text-[9px] text-(--color-text-secondary) mt-0.5">
+                            {name === "Legends" && "Populer & Pengikut Besar"}
+                            {name === "Viral Hits" && "Populer Tapi Pengikut Minim"}
+                            {name === "Cult Classics" && "Militan, Pengikut Relatif Tinggi"}
+                            {name === "Emerging Talents" && "Musisi Berkembang / Baru"}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-extrabold font-mono text-white">
+                          {stat.count}
+                        </span>
+                        {isSelected && (
+                          <Check size={12} weight="bold" className="text-(--color-accent-400)" />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             
-            <Text variant="caption" color="secondary" className="leading-normal">
-              Musisi dengan rasio pengikut (Followers) jauh melampaui sirkulasi playlist harian (Popularity).
-            </Text>
-
-            <div className="flex flex-col gap-2 mt-2">
-              {leaderboards.cultClassics.length > 0 ? (
-                leaderboards.cultClassics.map((artist, idx) => (
-                  <button
-                    key={artist.name}
-                    onClick={() => handleArtistClick(artist)}
-                    className="flex items-center justify-between p-2 rounded-lg bg-(--color-bg-surface)/20 border border-(--color-border-default) hover:border-(--color-data-3)/40 hover:bg-(--color-data-3)/5 transition-all text-left group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs font-mono font-bold text-(--color-text-muted) w-4 text-center shrink-0">
-                        {idx + 1}
-                      </span>
-                      <img
-                        src={artist.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&q=80"}
-                        alt={artist.name}
-                        className="size-7 rounded-full object-cover border border-white/10 shrink-0"
-                      />
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-white group-hover:text-(--color-data-3) transition-colors truncate">
-                          {artist.name}
-                        </span>
-                        <span className="text-[9px] text-(--color-text-secondary) truncate">
-                          Followers: {formatNumber(artist.followers)} | Pop: {artist.popularity}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <Badge color="info" className="text-[9px] font-mono shrink-0">
-                      SC: {artist.stickinessCoefficient.toFixed(1)}
-                    </Badge>
-                  </button>
-                ))
-              ) : (
-                <div className="py-4 text-center">
-                  <Text variant="caption" color="muted">Tidak ada musisi dalam kuadran ini.</Text>
-                </div>
-              )}
+            <div className="p-3 bg-(--color-bg-surface)/10 border border-(--color-border-default) rounded-lg mt-3 flex items-start gap-2">
+              <Info size={16} className="text-(--color-accent-400) shrink-0 mt-0.5" />
+              <span className="text-[10px] text-(--color-text-secondary) leading-normal">
+                Gunakan filter di atas untuk mengeksplorasi subgenre. Klik kuadran untuk mengisolasi data visual.
+              </span>
             </div>
           </GlassCard>
-
-          {/* Viral Hits Leaderboard Card */}
-          <GlassCard className="p-4 flex flex-col gap-3 flex-1">
-            <div className="flex items-center gap-1.5">
-              <Flame size={16} weight="fill" className="text-(--color-data-4)" />
-              <Text variant="heading" color="primary" className="font-bold text-sm">
-                Top Viral Hits (Hype Playlist)
-              </Text>
-            </div>
-            
-            <Text variant="caption" color="secondary" className="leading-normal">
-              Sirkulasi playlist tinggi tapi jarang diklik tombol follow (rasio loyalitas fans rendah).
-            </Text>
-
-            <div className="flex flex-col gap-2 mt-2">
-              {leaderboards.viralHits.length > 0 ? (
-                leaderboards.viralHits.map((artist, idx) => (
-                  <button
-                    key={artist.name}
-                    onClick={() => handleArtistClick(artist)}
-                    className="flex items-center justify-between p-2 rounded-lg bg-(--color-bg-surface)/20 border border-(--color-border-default) hover:border-(--color-data-4)/40 hover:bg-(--color-data-4)/5 transition-all text-left group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs font-mono font-bold text-(--color-text-muted) w-4 text-center shrink-0">
-                        {idx + 1}
-                      </span>
-                      <img
-                        src={artist.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&q=80"}
-                        alt={artist.name}
-                        className="size-7 rounded-full object-cover border border-white/10 shrink-0"
-                      />
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-white group-hover:text-(--color-data-4) transition-colors truncate">
-                          {artist.name}
-                        </span>
-                        <span className="text-[9px] text-(--color-text-secondary) truncate">
-                          Pop: {artist.popularity} | Followers: {formatNumber(artist.followers)}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <Badge color="warning" className="text-[9px] font-mono shrink-0">
-                      SC: {artist.stickinessCoefficient.toFixed(2)}
-                    </Badge>
-                  </button>
-                ))
-              ) : (
-                <div className="py-4 text-center">
-                  <Text variant="caption" color="muted">Tidak ada musisi dalam kuadran ini.</Text>
-                </div>
-              )}
-            </div>
-          </GlassCard>
-
         </motion.div>
       </div>
+
+      {/* ── Bottom Row: Leaderboards side-by-side ── */}
+      <motion.div variants={fadeUp} className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        {/* Cult Classics Leaderboard Card */}
+        <GlassCard className="p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-1.5">
+            <Heart size={16} weight="fill" className="text-(--color-data-3)" />
+            <Text variant="heading" color="primary" className="font-bold text-sm">
+              Top Cult Classics (Loyalitas Tinggi)
+            </Text>
+          </div>
+          
+          <Text variant="caption" color="secondary" className="leading-normal">
+            Musisi dengan rasio pengikut (Followers) jauh melampaui sirkulasi playlist harian (Popularity).
+          </Text>
+
+          <div className="flex flex-col gap-2 mt-2">
+            {leaderboards.cultClassics.length > 0 ? (
+              leaderboards.cultClassics.map((artist, idx) => (
+                <button
+                  key={artist.name}
+                  onClick={() => handleArtistClick(artist)}
+                  className="flex items-center justify-between p-2 rounded-lg bg-(--color-bg-surface)/20 border border-(--color-border-default) hover:border-(--color-data-3)/40 hover:bg-(--color-data-3)/5 transition-all text-left group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-xs font-mono font-bold text-(--color-text-muted) w-4 text-center shrink-0">
+                      {idx + 1}
+                    </span>
+                    <img
+                      src={artist.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&q=80"}
+                      alt={artist.name}
+                      className="size-7 rounded-full object-cover border border-white/10 shrink-0"
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-bold text-white group-hover:text-(--color-data-3) transition-colors truncate">
+                        {artist.name}
+                      </span>
+                      <span className="text-[9px] text-(--color-text-secondary) truncate">
+                        Followers: {formatNumber(artist.followers)} | Pop: {artist.popularity}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <Badge color="info" className="text-[9px] font-mono shrink-0">
+                    SC: {artist.stickinessCoefficient.toFixed(1)}
+                  </Badge>
+                </button>
+              ))
+            ) : (
+              <div className="py-4 text-center">
+                <Text variant="caption" color="muted">Tidak ada musisi dalam kuadran ini.</Text>
+              </div>
+            )}
+          </div>
+        </GlassCard>
+
+        {/* Viral Hits Leaderboard Card */}
+        <GlassCard className="p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-1.5">
+            <Flame size={16} weight="fill" className="text-(--color-data-4)" />
+            <Text variant="heading" color="primary" className="font-bold text-sm">
+              Top Viral Hits (Hype Playlist)
+            </Text>
+          </div>
+          
+          <Text variant="caption" color="secondary" className="leading-normal">
+            Sirkulasi playlist tinggi tapi jarang diklik tombol follow (rasio loyalitas fans rendah).
+          </Text>
+
+          <div className="flex flex-col gap-2 mt-2">
+            {leaderboards.viralHits.length > 0 ? (
+              leaderboards.viralHits.map((artist, idx) => (
+                <button
+                  key={artist.name}
+                  onClick={() => handleArtistClick(artist)}
+                  className="flex items-center justify-between p-2 rounded-lg bg-(--color-bg-surface)/20 border border-(--color-border-default) hover:border-(--color-data-4)/40 hover:bg-(--color-data-4)/5 transition-all text-left group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-xs font-mono font-bold text-(--color-text-muted) w-4 text-center shrink-0">
+                      {idx + 1}
+                    </span>
+                    <img
+                      src={artist.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&q=80"}
+                      alt={artist.name}
+                      className="size-7 rounded-full object-cover border border-white/10 shrink-0"
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-bold text-white group-hover:text-(--color-data-4) transition-colors truncate">
+                        {artist.name}
+                      </span>
+                      <span className="text-[9px] text-(--color-text-secondary) truncate">
+                        Pop: {artist.popularity} | Followers: {formatNumber(artist.followers)}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <Badge color="warning" className="text-[9px] font-mono shrink-0">
+                    SC: {artist.stickinessCoefficient.toFixed(2)}
+                  </Badge>
+                </button>
+              ))
+            ) : (
+              <div className="py-4 text-center">
+                <Text variant="caption" color="muted">Tidak ada musisi dalam kuadran ini.</Text>
+              </div>
+            )}
+          </div>
+        </GlassCard>
+      </motion.div>
     </motion.div>
   );
 }
