@@ -16,6 +16,7 @@ import {
 import type { ArtistData } from "@/components/organisms";
 import type { CityAggregate } from "@/components/organisms/InteractiveMap";
 import { Text, Badge, Divider, AnimatedCounter } from "@/components/atoms";
+import { Dropdown } from "@/components/molecules";
 
 /**
  * Home — Selasar Suara unified vertical-scroll page
@@ -32,6 +33,22 @@ export default function HomeOrganism() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [mapMode, setMapMode] = useState<'density' | 'popularity'>('density');
   const [cityData, setCityData] = useState<CityAggregate[]>([]);
+  const [selectedGenre, setSelectedGenre] = useState<string>("Semua");
+  const [selectedFormat, setSelectedFormat] = useState<string>("Semua");
+  const [radiusMetric, setRadiusMetric] = useState<'followers' | 'count'>("count");
+  const [availableGenres, setAvailableGenres] = useState<string[]>([]);
+
+  const genreOptions = useMemo(() => {
+    const options = [{ label: "Semua Genre", value: "Semua" }];
+    availableGenres.forEach((g) => {
+      const label = g
+        .split(" ")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+      options.push({ label, value: g });
+    });
+    return options;
+  }, [availableGenres]);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -192,13 +209,78 @@ export default function HomeOrganism() {
           topGenre={kpiStats?.topGenre ?? "Loading..."}
         />
 
+        {/* Glassmorphic Filter Controls Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 p-4 mb-4 bg-neutral-900/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl">
+          {/* Left: Genre Selector */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-white/50 tracking-wide uppercase">Genre Utama</span>
+            <Dropdown
+              options={genreOptions}
+              value={selectedGenre}
+              onChange={setSelectedGenre}
+              className="w-48"
+            />
+          </div>
+
+          {/* Center: Format Selector */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-white/50 tracking-wide uppercase">Format</span>
+            <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
+              {[
+                { label: "Semua", value: "Semua" },
+                { label: "Soloist", value: "Soloist" },
+                { label: "Band", value: "Band" }
+              ].map((fmt) => (
+                <button
+                  key={fmt.value}
+                  onClick={() => setSelectedFormat(fmt.value)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                    selectedFormat === fmt.value
+                      ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
+                      : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                  }`}
+                >
+                  {fmt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Sizing Selector */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-white/50 tracking-wide uppercase">Ukuran Gelembung</span>
+            <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
+              {[
+                { label: "Kepadatan Artis", value: "count" },
+                { label: "Reach Followers", value: "followers" }
+              ].map((metric) => (
+                <button
+                  key={metric.value}
+                  onClick={() => setRadiusMetric(metric.value as 'count' | 'followers')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                    radiusMetric === metric.value
+                      ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
+                      : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                  }`}
+                >
+                  {metric.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Map canvas — fills remaining height */}
         <div className="flex-1 min-h-0 relative rounded-lg overflow-hidden border border-(--color-border-default)">
           <MapPlaceholder 
             mapMode={mapMode}
+            selectedGenre={selectedGenre}
+            selectedFormat={selectedFormat}
+            radiusMetric={radiusMetric}
             onArtistClick={setSelectedArtist} 
             onCityClick={handleCitySelect} 
             onDataLoaded={setCityData}
+            onGenresLoaded={setAvailableGenres}
           />
         </div>
       </section>

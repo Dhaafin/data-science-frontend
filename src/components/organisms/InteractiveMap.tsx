@@ -141,21 +141,29 @@ function getDivergingColor(value: number, avg: number, maxDiv: number) {
 
 export interface MapProps {
   mapMode: 'density' | 'popularity';
+  selectedGenre: string;
+  selectedFormat: string;
+  radiusMetric: 'followers' | 'count';
   onArtistClick?: (artist: ArtistData) => void;
   onCityClick?: (city: CityAggregate) => void;
   onDataLoaded?: (data: CityAggregate[]) => void;
+  onGenresLoaded?: (genres: string[]) => void;
 }
 
-export default function InteractiveMap({ mapMode, onArtistClick, onCityClick, onDataLoaded }: MapProps) {
+export default function InteractiveMap({
+  mapMode,
+  selectedGenre,
+  selectedFormat,
+  radiusMetric,
+  onArtistClick,
+  onCityClick,
+  onDataLoaded,
+  onGenresLoaded,
+}: MapProps) {
   const [geoJsonData, setGeoJsonData] = useState<GeoJsonObject | null>(null);
   const [rawArtists, setRawArtists] = useState<any[]>([]);
   const [hoveredCity, setHoveredCity] = useState<CityAggregate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // local filter states
-  const [selectedGenre, setSelectedGenre] = useState<string>("Semua");
-  const [selectedFormat, setSelectedFormat] = useState<string>("Semua");
-  const [radiusMetric, setRadiusMetric] = useState<'followers' | 'count'>('followers');
 
   // Fetch GeoJSON and raw data once on mount
   useEffect(() => {
@@ -175,6 +183,16 @@ export default function InteractiveMap({ mapMode, onArtistClick, onCityClick, on
           setGeoJsonData(geoJson);
           setRawArtists(dbResponse.data || []);
           setIsLoading(false);
+
+          // Extract unique genres
+          const genresSet = new Set<string>();
+          dbResponse.data.forEach((row: any) => {
+            if (row.primary_genre) {
+              genresSet.add(row.primary_genre.toLowerCase().trim());
+            }
+          });
+          const sortedGenres = Array.from(genresSet).sort();
+          if (onGenresLoaded) onGenresLoaded(sortedGenres);
         }
       } catch (err) {
         console.error("Map Data Fetch Error:", err);
@@ -452,71 +470,7 @@ export default function InteractiveMap({ mapMode, onArtistClick, onCityClick, on
         </Pane>
       </MapContainer>
 
-      {/* Floating Control Panel */}
-      <div className="absolute bottom-6 left-6 z-[1000] w-64 p-4 rounded-xl border border-(--color-border-default) bg-(--color-bg-sidebar)/90 backdrop-blur-md shadow-2xl flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-white/90">Filter Genre</span>
-          <select
-            value={selectedGenre}
-            onChange={(e) => setSelectedGenre(e.target.value)}
-            className="w-full text-xs bg-(--color-bg-surface)/40 border border-(--color-border-default) rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-(--color-accent-500) transition-colors cursor-pointer"
-          >
-            <option value="Semua">Semua Genre</option>
-            <option value="Pop">Pop</option>
-            <option value="Rock">Rock</option>
-            <option value="Indie">Indie</option>
-            <option value="Dangdut">Dangdut</option>
-            <option value="Jazz">Jazz</option>
-            <option value="Folk">Folk</option>
-            <option value="Metal">Metal</option>
-          </select>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-white/90">Format Musisi</span>
-          <div className="grid grid-cols-3 gap-1 bg-(--color-bg-surface)/30 p-0.5 rounded-lg border border-(--color-border-default)">
-            {["Semua", "Soloist", "Band"].map((type) => (
-              <button
-                key={type}
-                onClick={() => setSelectedFormat(type === "Band" ? "Band" : type === "Soloist" ? "Soloist" : "Semua")}
-                className={`py-1 text-[10px] font-medium rounded transition-colors cursor-pointer text-center ${
-                  (type === "Semua" && selectedFormat === "Semua") ||
-                  (type === "Soloist" && selectedFormat === "Soloist") ||
-                  (type === "Band" && selectedFormat === "Band")
-                    ? "bg-(--color-accent-500) text-black font-semibold"
-                    : "text-(--color-text-secondary) hover:text-white"
-                }`}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-white/90">Ukuran Gelembung</span>
-          <div className="grid grid-cols-2 gap-1 bg-(--color-bg-surface)/30 p-0.5 rounded-lg border border-(--color-border-default)">
-            {[
-              { id: "followers", label: "Followers" },
-              { id: "count", label: "Artis" }
-            ].map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => setRadiusMetric(opt.id as 'followers' | 'count')}
-                className={`py-1 text-[10px] font-medium rounded transition-colors cursor-pointer text-center ${
-                  radiusMetric === opt.id
-                    ? "bg-(--color-accent-500) text-black font-semibold"
-                    : "text-(--color-text-secondary) hover:text-white"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Advanced Hover HUD */}
+      {/* Simple Hover HUD */}
       <AnimatePresence>
         {hoveredCity && (
           <motion.div
@@ -527,43 +481,18 @@ export default function InteractiveMap({ mapMode, onArtistClick, onCityClick, on
             className="absolute top-8 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none"
           >
             <div 
-              className="px-6 py-4 flex flex-col rounded-xl shadow-2xl w-80 text-left border border-white/10 bg-[#0c1015]/90 backdrop-blur-md"
+              className="px-6 py-3 flex flex-col items-center rounded-xl shadow-2xl"
+              style={{
+                background: "rgba(18, 18, 18, 0.85)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(255, 255, 255, 0.15)"
+              }}
             >
-              <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-3">
-                <span className="font-bold text-white text-lg tracking-wide">{hoveredCity.city}</span>
-                <span className="text-[10px] uppercase font-semibold text-(--color-text-secondary) tracking-wider">
-                  Episentrum Kota
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-(--color-text-secondary) uppercase tracking-wider font-medium">Kepadatan Artis</span>
-                  <span className="text-white text-sm font-semibold mt-0.5">
-                    {hoveredCity.count} Musisi
-                  </span>
-                </div>
-
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-(--color-text-secondary) uppercase tracking-wider font-medium">Genre Utama</span>
-                  <span className="text-(--color-accent-400) text-sm font-semibold mt-0.5">
-                    {hoveredCity.topGenre}
-                  </span>
-                </div>
-
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-(--color-text-secondary) uppercase tracking-wider font-medium">Pembagian Solo/Band</span>
-                  <span className="text-white text-xs font-semibold mt-1">
-                    {hoveredCity.soloCount} S / {hoveredCity.bandCount} B
-                  </span>
-                </div>
-
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-(--color-text-secondary) uppercase tracking-wider font-medium">Musisi Teratas</span>
-                  <span className="text-white text-xs font-semibold truncate mt-1" title={hoveredCity.topArtistName}>
-                    {hoveredCity.topArtistName} ({hoveredCity.topArtistPopularity} Pop)
-                  </span>
-                </div>
+              <span className="font-bold text-white text-lg tracking-wide">{hoveredCity.city}</span>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[#34d399] text-sm font-bold">{hoveredCity.count}</span>
+                <span className="text-white/60 text-xs uppercase tracking-wider font-medium">Musisi Terdaftar</span>
               </div>
             </div>
           </motion.div>
