@@ -601,6 +601,7 @@ export const musicService = {
         avgFollowers: stats.band.count > 0 ? Math.round(stats.band.totalFollowers / stats.band.count) : 0,
         count: stats.band.count,
       },
+    };
   },
   
   /**
