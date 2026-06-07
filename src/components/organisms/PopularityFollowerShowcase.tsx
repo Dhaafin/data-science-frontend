@@ -305,11 +305,11 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
         <div className="flex items-center gap-2">
           <TrendUp size={20} weight="bold" className="text-(--color-accent-500)" />
           <Text as="h1" variant="title" color="primary">
-            Fans Loyalty &amp; Stickiness Index
+            Analisis Loyalitas &amp; Popularitas Musisi
           </Text>
         </div>
         <Text variant="body" color="secondary">
-          Analisis perbandingan antara pendengar viral sesaat (Popularity) dengan loyalitas fanatik jangka panjang (Followers).
+          Perbandingan antara tingkat popularitas aktif (Popularity) dengan jumlah pengikut (Followers) musisi.
         </Text>
       </motion.div>
 
@@ -359,10 +359,10 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
                 <Text variant="heading" color="primary" className="font-bold">
-                  2D Interactive Scatterplot
+                  Peta Sebaran Popularitas &amp; Pengikut
                 </Text>
                 <Text variant="caption" color="secondary">
-                  Klik titik musisi untuk detail. Garis putus-putus menunjukkan median regional.
+                  Sebaran musisi berdasarkan popularitas (Y) dan pengikut (X). Klik titik untuk detail profil.
                 </Text>
               </div>
               
@@ -651,7 +651,7 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
 
                       <div className="pt-2 border-t border-white/5 flex items-center justify-between">
                         <div className="flex items-center gap-1 text-[9px] text-(--color-text-secondary) font-medium">
-                          <span className="uppercase font-bold text-[8px]">Loyalty (SC)</span>
+                          <span className="uppercase font-bold text-[8px]">Rasio Pengikut</span>
                           <Info size={10} />
                         </div>
                         <Badge color="accent" className="text-xs font-extrabold px-1.5 py-0.5">
@@ -660,7 +660,7 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
                       </div>
 
                       <div className="text-[8px] text-(--color-text-muted) italic leading-tight">
-                        Kuadran: <span className="font-semibold" style={{ color: getQuadrantColor(hoveredArtist.quadrant) }}>{hoveredArtist.quadrant}</span>
+                        Kategori: <span className="font-semibold" style={{ color: getQuadrantColor(hoveredArtist.quadrant) }}>{hoveredArtist.quadrant}</span>
                       </div>
                     </motion.div>
                   )}
@@ -707,10 +707,10 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
                             {name}
                           </span>
                           <span className="text-[9px] text-(--color-text-secondary) mt-0.5">
-                            {name === "Legends" && "Populer & Pengikut Besar"}
-                            {name === "Viral Hits" && "Populer Tapi Pengikut Minim"}
-                            {name === "Cult Classics" && "Militan, Pengikut Relatif Tinggi"}
-                            {name === "Emerging Talents" && "Musisi Berkembang / Baru"}
+                            {name === "Legends" && "Popularitas & Pengikut Tinggi"}
+                            {name === "Viral Hits" && "Popularitas Tinggi, Pengikut Rendah"}
+                            {name === "Cult Classics" && "Popularitas Rendah, Pengikut Tinggi"}
+                            {name === "Emerging Talents" && "Popularitas & Pengikut Rendah"}
                           </span>
                         </div>
                       </div>
@@ -746,12 +746,12 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
           <div className="flex items-center gap-1.5">
             <Heart size={16} weight="fill" className="text-(--color-data-3)" />
             <Text variant="heading" color="primary" className="font-bold text-sm">
-              Top Cult Classics (Loyalitas Tinggi)
+              Rasio Pengikut Tertinggi
             </Text>
           </div>
           
           <Text variant="caption" color="secondary" className="leading-normal">
-            Musisi dengan rasio pengikut (Followers) jauh melampaui sirkulasi playlist harian (Popularity).
+            Musisi dengan jumlah pengikut (Followers) tinggi dibandingkan tingkat popularitasnya.
           </Text>
 
           <div className="flex flex-col gap-2 mt-2">
@@ -782,7 +782,7 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
                   </div>
                   
                   <Badge color="info" className="text-[9px] font-mono shrink-0">
-                    SC: {artist.stickinessCoefficient.toFixed(1)}
+                    Rasio: {artist.stickinessCoefficient.toFixed(1)}
                   </Badge>
                 </button>
               ))
@@ -799,12 +799,12 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
           <div className="flex items-center gap-1.5">
             <Flame size={16} weight="fill" className="text-(--color-data-4)" />
             <Text variant="heading" color="primary" className="font-bold text-sm">
-              Top Viral Hits (Hype Playlist)
+              Rasio Pengikut Terendah
             </Text>
           </div>
           
           <Text variant="caption" color="secondary" className="leading-normal">
-            Sirkulasi playlist tinggi tapi jarang diklik tombol follow (rasio loyalitas fans rendah).
+            Musisi dengan tingkat popularitas tinggi namun jumlah pengikut relatif rendah.
           </Text>
 
           <div className="flex flex-col gap-2 mt-2">
@@ -835,7 +835,7 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
                   </div>
                   
                   <Badge color="warning" className="text-[9px] font-mono shrink-0">
-                    SC: {artist.stickinessCoefficient.toFixed(2)}
+                    Rasio: {artist.stickinessCoefficient.toFixed(2)}
                   </Badge>
                 </button>
               ))
