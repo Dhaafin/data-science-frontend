@@ -26,8 +26,8 @@ export function mapDbToArtistData(dbArtist: DatabaseArtist): ArtistData {
     profilePicture: dbArtist.profile_picture,
     originCity: dbArtist.origin_city,
     province: dbArtist.origin_province,
-    popularity: dbArtist.popularity,
-    followers: dbArtist.followers,
+    popularity: dbArtist.popularity || 0,
+    followers: dbArtist.followers || 0,
     genres: dbArtist.genre || [],
     primaryGenre: dbArtist.primary_genre || "",
     artistType: dbArtist.artist_type || "Person",
@@ -142,7 +142,7 @@ export const musicService = {
     pageSize: number = 10,
     artistType: string = "Semua",
   ): Promise<PaginatedResult<ArtistData>> {
-    let url = `/music_data?order=popularity.desc`;
+    let url = `/music_data?order=popularity.desc.nullslast`;
     const filters: string[] = [];
 
     // 1. Text Search (ILIKE across multiple fields matching exact database column names)
