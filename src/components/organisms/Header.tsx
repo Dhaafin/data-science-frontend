@@ -26,10 +26,10 @@ import { Text } from "@/components/atoms";
 
 const NAV_ITEMS = [
   { id: "map", path: "/", hash: "#map", icon: MapPin, label: "Talent Map" },
+  { id: "artist-format", path: "/", hash: "#artist-format", icon: Users, label: "Format & Collab" },
   { id: "explore", path: "/", hash: "#explore", icon: MagnifyingGlass, label: "Explore Database" },
   { id: "genres", path: "/", hash: "#genres", icon: MusicNotes, label: "Genre Deep-Dive" },
   { id: "comparative", path: "/", hash: "#comparative", icon: ChartBar, label: "Comparative" },
-  { id: "artist-format", path: "/", hash: "#artist-format", icon: Users, label: "Format & Collab" },
   { id: "about", path: "/about", hash: "", icon: Info, label: "About" },
 ] as const;
 
