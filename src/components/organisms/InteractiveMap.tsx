@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Pane } from "react-leaflet";
 import { AnimatePresence, motion } from "framer-motion";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { cityCentroids } from "@/lib/config/cityCentroids";
 import type { ArtistData } from "@/components/organisms/ArtistDrawer";
+import { mapDbToArtistData } from "@/lib/api/musicService";
 import type { GeoJsonObject } from "geojson";
 
 // Fix Leaflet marker icons issue in Next.js
@@ -186,7 +187,7 @@ export default function InteractiveMap({ mapMode, onArtistClick, onCityClick, on
   }, []);
 
   // Compute filtered city aggregates Reactively
-  const cityData = useMemo(() => {
+  const cityData = useMemo<CityAggregate[]>(() => {
     const filtered = rawArtists.filter((row) => {
       // Genre filter
       if (selectedGenre !== "Semua") {
@@ -302,7 +303,7 @@ export default function InteractiveMap({ mapMode, onArtistClick, onCityClick, on
   }, [rawArtists, selectedGenre, selectedFormat]);
 
   const maxProvinceCount = useMemo(() => {
-    const values = Object.values(provinceCounts);
+    const values = Object.values(provinceCounts) as number[];
     return values.length > 0 ? Math.max(...values) : 1;
   }, [provinceCounts]);
 
@@ -318,21 +319,21 @@ export default function InteractiveMap({ mapMode, onArtistClick, onCityClick, on
   }
 
   // Calculate max values for proportional scaling and color diverging stop metrics
-  const maxMetricValue = Math.max(...cityData.map((c) => radiusMetric === 'followers' ? c.totalFollowers : c.count), 1);
-  const totalPop = cityData.reduce((acc, c) => acc + c.avgPopularity, 0);
+  const maxMetricValue = Math.max(...cityData.map((c: CityAggregate) => radiusMetric === 'followers' ? c.totalFollowers : c.count), 1);
+  const totalPop = cityData.reduce((acc: number, c: CityAggregate) => acc + c.avgPopularity, 0);
   const globalAvgPopularity = cityData.length > 0 ? totalPop / cityData.length : 50;
   
   let maxPopDivergence = 15; 
-  cityData.forEach((c) => {
+  cityData.forEach((c: CityAggregate) => {
     const div = Math.abs(c.avgPopularity - globalAvgPopularity);
     if (div > maxPopDivergence) maxPopDivergence = div;
   });
 
-  const totalCount = cityData.reduce((acc, c) => acc + c.count, 0);
+  const totalCount = cityData.reduce((acc: number, c: CityAggregate) => acc + c.count, 0);
   const globalAvgCount = cityData.length > 0 ? totalCount / cityData.length : 5;
   
   let maxCountDivergence = 5;
-  cityData.forEach((c) => {
+  cityData.forEach((c: CityAggregate) => {
     const div = Math.abs(c.count - globalAvgCount);
     if (div > maxCountDivergence) maxCountDivergence = div;
   });
@@ -340,9 +341,9 @@ export default function InteractiveMap({ mapMode, onArtistClick, onCityClick, on
   const getProvinceStyle = (feature: any) => {
     const propName = feature.properties?.Propinsi || "";
     let count = 0;
-    for (const [dbProv, c] of Object.entries(provinceCounts)) {
+    for (const dbProv of Object.keys(provinceCounts)) {
       if (matchProvinceName(dbProv, propName)) {
-        count = c;
+        count = provinceCounts[dbProv] || 0;
         break;
       }
     }
@@ -399,7 +400,7 @@ export default function InteractiveMap({ mapMode, onArtistClick, onCityClick, on
         />
 
         <Pane name="cities-pane" style={{ zIndex: 500 }}>
-          {cityData.map((city) => {
+          {cityData.map((city: CityAggregate) => {
             const baseRadius = 6;
             const value = radiusMetric === 'followers' ? city.totalFollowers : city.count;
             const ratio = value / maxMetricValue;
