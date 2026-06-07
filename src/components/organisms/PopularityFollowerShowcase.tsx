@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { staggerContainer, fadeUp } from "@/lib/motion";
 import {
@@ -40,7 +41,7 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
   const [selectedGenre, setSelectedGenre] = useState<string>("Semua");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [hoveredArtist, setHoveredArtist] = useState<MappedArtist | null>(null);
-  const [hoveredPosition, setHoveredPosition] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredPosition, setHoveredPosition] = useState<{ clientX: number; clientY: number; pageX: number; pageY: number } | null>(null);
   
   // Dynamic highlighting of quadrants
   const [highlightedQuadrant, setHighlightedQuadrant] = useState<string | null>(null);
@@ -539,136 +540,134 @@ export function PopularityFollowerShowcase({ onArtistSelect }: PopularityFollowe
                   const isSearchMatch = searchQuery.trim() !== "" && artist.isActive;
 
                   return (
-                    <motion.g
+                    <g
                       key={artist.name}
                       onClick={() => handleArtistClick(artist)}
                       onMouseEnter={(e) => {
                         setHoveredArtist(artist);
-                        
-                        // Capture SVG bounding container coordinates to calculate tooltip anchor coordinates
-                        const rect = e.currentTarget.parentElement?.getBoundingClientRect();
-                        if (rect) {
-                          const svgEl = e.currentTarget.parentElement;
-                          const pt = (svgEl as any).createSVGPoint();
-                          pt.x = e.clientX;
-                          pt.y = e.clientY;
-                          const loc = pt.matrixTransform((svgEl as any).getScreenCTM().inverse());
-                          setHoveredPosition({ x: loc.x, y: loc.y });
-                        }
+                        setHoveredPosition({
+                          clientX: e.clientX,
+                          clientY: e.clientY,
+                          pageX: e.clientX + window.scrollX,
+                          pageY: e.clientY + window.scrollY,
+                        });
                       }}
                       onMouseLeave={() => {
                         setHoveredArtist(null);
                         setHoveredPosition(null);
                       }}
                       className="cursor-pointer"
-                      style={{ originX: `${cx}px`, originY: `${cy}px` }}
-                      animate={{
-                        opacity: artist.isFaded ? 0.12 : 1,
-                        scale: isHovered ? 1.5 : isSearchMatch ? 1.3 : 1,
-                      }}
-                      transition={{ type: "spring", stiffness: 150, damping: 20 }}
                     >
                       {/* Glow filter backdrop when hovered or matched */}
                       {(isHovered || isSearchMatch) && (
                         <circle
                           cx={cx}
                           cy={cy}
-                          r={isHovered ? 10 : 8}
+                          r={isHovered ? 12 : 8}
                           fill={dotColor}
-                          opacity={0.3}
-                          className="animate-ping"
+                          opacity={0.25}
+                          className="animate-ping pointer-events-none"
                         />
                       )}
                       
-                      {/* Main dot circle */}
-                      <circle
+                      {/* Main dot circle using motion.circle to animate radius and opacity directly */}
+                      <motion.circle
                         cx={cx}
                         cy={cy}
-                        r={isHovered ? 6 : 4}
+                        initial={{ r: 4, opacity: 1 }}
+                        animate={{
+                          r: isHovered ? 7 : isSearchMatch ? 6 : 4,
+                          opacity: artist.isFaded ? 0.15 : 1,
+                        }}
                         fill={dotColor}
                         stroke="rgba(255,255,255,0.2)"
                         strokeWidth={isHovered ? 1.5 : 0.75}
+                        transition={{ type: "spring", stiffness: 250, damping: 20 }}
                       />
-                    </motion.g>
+                    </g>
                   );
                 })}
               </svg>
 
-              {/* ── 7. Glassmorphic Tooltip (anchored inside container coordinates) ── */}
-              <AnimatePresence>
-                {hoveredArtist && hoveredPosition && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    transition={{ duration: 0.15 }}
-                    style={{
-                      position: "absolute",
-                      left: `${(hoveredPosition.x / viewBoxWidth) * 100}%`,
-                      top: `${(hoveredPosition.y / viewBoxHeight) * 100}%`,
-                      transform: `translate(${
-                        hoveredPosition.x > viewBoxWidth / 2 ? "-105%" : "5%"
-                      }, ${
-                        hoveredPosition.y > viewBoxHeight / 2 ? "-105%" : "5%"
-                      })`,
-                      pointerEvents: "none",
-                      zIndex: 30,
-                    }}
-                    className="w-[250px] p-3 rounded-lg border border-(--color-border-accent) bg-(--color-bg-drawer)/90 shadow-xl backdrop-blur-md flex flex-col gap-2.5"
-                  >
-                    {/* Header profile row */}
-                    <div className="flex items-center gap-2.5">
-                      <img
-                        src={hoveredArtist.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&q=80"}
-                        alt={hoveredArtist.name}
-                        className="size-8 rounded-full object-cover border border-white/20 shrink-0"
-                      />
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-white truncate leading-tight">
-                          {hoveredArtist.name}
-                        </span>
-                        <div className="flex items-center gap-1.5 truncate mt-0.5">
-                          <Badge color="accent" className="text-[8px] px-1 py-0 px-1.5 font-bold uppercase tracking-wider scale-95 origin-left">
-                            {hoveredArtist.primaryGenre}
-                          </Badge>
-                          <span className="text-[9px] text-(--color-text-secondary) truncate">
-                            {hoveredArtist.originCity}
+            </div>
+
+            {/* ── 7. Glassmorphic Tooltip (anchored inside React Portal to document.body) ── */}
+            {typeof document !== "undefined" &&
+              createPortal(
+                <AnimatePresence>
+                  {hoveredArtist && hoveredPosition && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.1 }}
+                      style={{
+                        position: "absolute",
+                        left: `${hoveredPosition.pageX}px`,
+                        top: `${hoveredPosition.pageY}px`,
+                        transform: `translate(${
+                          hoveredPosition.clientX > window.innerWidth / 2 ? "-105%" : "15px"
+                        }, -105%)`,
+                        pointerEvents: "none",
+                        zIndex: 9999,
+                      }}
+                      className="w-[250px] p-3 rounded-lg border border-(--color-border-accent) bg-(--color-bg-drawer)/95 shadow-xl backdrop-blur-md flex flex-col gap-2.5"
+                    >
+                      {/* Header profile row */}
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={hoveredArtist.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&q=80"}
+                          alt={hoveredArtist.name}
+                          className="size-8 rounded-full object-cover border border-white/20 shrink-0"
+                        />
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-white truncate leading-tight">
+                            {hoveredArtist.name}
                           </span>
+                          <div className="flex items-center gap-1.5 truncate mt-0.5">
+                            <Badge color="accent" className="text-[8px] px-1 py-0 px-1.5 font-bold uppercase tracking-wider scale-95 origin-left">
+                              {hoveredArtist.primaryGenre}
+                            </Badge>
+                            <span className="text-[9px] text-(--color-text-secondary) truncate">
+                              {hoveredArtist.originCity}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <Divider spacing="sm" />
+                      <Divider spacing="sm" />
 
-                    {/* Analytics stats */}
-                    <div className="grid grid-cols-2 gap-2 text-left">
-                      <div className="flex flex-col">
-                        <span className="text-[9px] text-(--color-text-secondary) font-bold uppercase">Popularity</span>
-                        <span className="text-sm font-bold text-white mt-0.5">{hoveredArtist.popularity}</span>
+                      {/* Analytics stats */}
+                      <div className="grid grid-cols-2 gap-2 text-left">
+                        <div className="flex flex-col">
+                          <span className="text-[9px] text-(--color-text-secondary) font-bold uppercase">Popularity</span>
+                          <span className="text-sm font-bold text-white mt-0.5">{hoveredArtist.popularity}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[9px] text-(--color-text-secondary) font-bold uppercase">Followers</span>
+                          <span className="text-sm font-bold text-white mt-0.5">{formatNumber(hoveredArtist.followers)}</span>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-[9px] text-(--color-text-secondary) font-bold uppercase">Followers</span>
-                        <span className="text-sm font-bold text-white mt-0.5">{formatNumber(hoveredArtist.followers)}</span>
-                      </div>
-                    </div>
 
-                    <div className="pt-2 border-t border-white/5 flex items-center justify-between">
-                      <div className="flex items-center gap-1 text-[9px] text-(--color-text-secondary) font-medium">
-                        <span className="uppercase font-bold text-[8px]">Loyalty (SC)</span>
-                        <Info size={10} />
+                      <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                        <div className="flex items-center gap-1 text-[9px] text-(--color-text-secondary) font-medium">
+                          <span className="uppercase font-bold text-[8px]">Loyalty (SC)</span>
+                          <Info size={10} />
+                        </div>
+                        <Badge color="accent" className="text-xs font-extrabold px-1.5 py-0.5">
+                          {hoveredArtist.stickinessCoefficient.toFixed(2)}
+                        </Badge>
                       </div>
-                      <Badge color="accent" className="text-xs font-extrabold px-1.5 py-0.5">
-                        {hoveredArtist.stickinessCoefficient.toFixed(2)}
-                      </Badge>
-                    </div>
 
-                    <div className="text-[8px] text-(--color-text-muted) italic leading-tight">
-                      Kuadran: <span className="font-semibold" style={{ color: getQuadrantColor(hoveredArtist.quadrant) }}>{hoveredArtist.quadrant}</span>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                      <div className="text-[8px] text-(--color-text-muted) italic leading-tight">
+                        Kuadran: <span className="font-semibold" style={{ color: getQuadrantColor(hoveredArtist.quadrant) }}>{hoveredArtist.quadrant}</span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>,
+                document.body
+              )
+            }
           </GlassCard>
         </motion.div>
 
