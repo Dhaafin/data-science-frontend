@@ -318,6 +318,7 @@ export default function InteractiveMap({
         soloCount: c.soloCount,
         bandCount: c.bandCount,
       };
+    });
   }, [rawArtists, selectedGenre, selectedFormat]);
 
   // Compute province aggregates
