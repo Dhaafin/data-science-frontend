@@ -1083,11 +1083,11 @@ export default function HomeOrganism() {
                               <div className="flex justify-between items-center text-xs">
                                 <div className="relative flex items-center gap-1 group/tooltip">
                                   <span className="text-white/70 text-[11px] cursor-help">Jakarta Centralization (JCI)</span>
-                                  <Question size={13} className="text-white/40 hover:text-white cursor-help transition-colors" />
-                                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
-                                    <div className="text-[10px] font-bold text-teal-400 mb-1">Jakarta Centralization Index (JCI)</div>
-                                    <div className="text-[9px] text-teal-400/90 font-mono mb-1.5">Formula: (Musisi Jkt / Total Musisi) × 100%</div>
-                                    <div className="text-[9px] text-white/70 leading-normal font-normal">
+                                  <Question size={14} className="text-white/40 hover:text-white cursor-help transition-colors" />
+                                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-80 p-4 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
+                                    <div className="text-xs font-bold text-teal-400 mb-1">Jakarta Centralization Index (JCI)</div>
+                                    <div className="text-[10px] text-teal-400/90 font-mono mb-2">Formula: (Musisi Jkt / Total Musisi) × 100%</div>
+                                    <div className="text-[11px] text-white/80 leading-relaxed font-normal">
                                       Mengukur konsentrasi talenta di ibu kota. Indeks tinggi menunjukkan struktur pasar yang Jakarta-sentris, mencerminkan ketimpangan akses infrastruktur industri musik di daerah lain.
                                     </div>
                                   </div>
@@ -1112,11 +1112,11 @@ export default function HomeOrganism() {
                               <div className="flex justify-between items-center text-xs">
                                 <div className="relative flex items-center gap-1 group/tooltip">
                                   <span className="text-white/70 text-[11px] cursor-help">Java Dominance Ratio (JDR)</span>
-                                  <Question size={13} className="text-white/40 hover:text-white cursor-help transition-colors" />
-                                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
-                                    <div className="text-[10px] font-bold text-sky-400 mb-1">Java Dominance Ratio (JDR)</div>
-                                    <div className="text-[9px] text-sky-400/90 font-mono mb-1.5">Formula: (Followers Jawa / Total Followers) × 100%</div>
-                                    <div className="text-[9px] text-white/70 leading-normal font-normal">
+                                  <Question size={14} className="text-white/40 hover:text-white cursor-help transition-colors" />
+                                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-80 p-4 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
+                                    <div className="text-xs font-bold text-sky-400 mb-1">Java Dominance Ratio (JDR)</div>
+                                    <div className="text-[10px] text-sky-400/90 font-mono mb-2">Formula: (Followers Jawa / Total Followers) × 100%</div>
+                                    <div className="text-[11px] text-white/80 leading-relaxed font-normal">
                                       Mengukur dominasi komersial musisi asal Jawa dalam menggaet pangsa pengikut digital nasional. Rasio tinggi menyoroti hegemoni pasar pendengar yang timpang di luar Jawa.
                                     </div>
                                   </div>
@@ -1141,11 +1141,11 @@ export default function HomeOrganism() {
                               <div className="flex justify-between items-center text-xs">
                                 <div className="relative flex items-center gap-1 group/tooltip">
                                   <span className="text-white/70 text-[11px] cursor-help">Outer-Java Popularity Gap</span>
-                                  <Question size={13} className="text-white/40 hover:text-white cursor-help transition-colors" />
-                                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
-                                    <div className="text-[10px] font-bold text-rose-400 mb-1">Outer-Java Popularity Gap</div>
-                                    <div className="text-[9px] text-rose-400/90 font-mono mb-1.5">Formula: |Rerata Pop Jawa - Rerata Pop Luar Jawa|</div>
-                                    <div className="text-[9px] text-white/70 leading-normal font-normal">
+                                  <Question size={14} className="text-white/40 hover:text-white cursor-help transition-colors" />
+                                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-80 p-4 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
+                                    <div className="text-xs font-bold text-rose-400 mb-1">Outer-Java Popularity Gap</div>
+                                    <div className="text-[10px] text-rose-400/90 font-mono mb-2">Formula: |Rerata Pop Jawa - Rerata Pop Luar Jawa|</div>
+                                    <div className="text-[11px] text-white/80 leading-relaxed font-normal">
                                       Selisih rata-rata skor popularitas musisi di Pulau Jawa vs Luar Jawa. Kesenjangan tinggi menunjukkan musisi luar Jawa menghadapi hambatan eksposur yang signifikan.
                                     </div>
                                   </div>
