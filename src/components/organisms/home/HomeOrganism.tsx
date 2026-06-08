@@ -216,6 +216,7 @@ export default function HomeOrganism() {
   const [sortBy, setSortBy] = useState<"count" | "followers" | "popularity" | "name">("count");
   const [showAllGenres, setShowAllGenres] = useState(false);
   const [rq1Granularity, setRq1Granularity] = useState<'pulau' | 'provinsi' | 'kota'>('kota');
+  const [isRq1Transitioning, setIsRq1Transitioning] = useState(false);
 
   const mapMode = activePerspective === "aksesibilitas" ? "popularity" : "density";
 
@@ -1201,7 +1202,12 @@ export default function HomeOrganism() {
                         ].map((gran) => (
                           <button
                             key={gran.value}
-                            onClick={() => setRq1Granularity(gran.value as any)}
+                            onClick={() => {
+                              if (rq1Granularity === gran.value) return;
+                              setIsRq1Transitioning(true);
+                              setRq1Granularity(gran.value as any);
+                              setTimeout(() => setIsRq1Transitioning(false), 300);
+                            }}
                             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                               rq1Granularity === gran.value
                                 ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
@@ -1215,344 +1221,480 @@ export default function HomeOrganism() {
                     </div>
                   </div>
 
-                  {/* 1. PULAU GRANULARITY DISPLAY */}
-                  {rq1Granularity === "pulau" && (
-                    <div className="flex flex-col gap-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/2 p-5 rounded-xl border border-white/5">
-                        {/* Java vs Outside Java representation */}
-                        <div className="flex flex-col gap-2">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-bold text-white/90">Kepadatan Musisi Jawa vs Luar Jawa</span>
-                            <span className="text-teal-400 font-bold">{rq1Stats.javaArtistPct}% Jawa</span>
-                          </div>
-                          <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden flex border border-white/5">
-                            <motion.div
-                              className="bg-teal-500 h-full"
-                              initial={{ width: 0 }}
-                              animate={{ width: `${rq1Stats.javaArtistPct}%` }}
-                              transition={{ duration: 0.8, ease: "easeOut" }}
-                            />
-                          </div>
-                          <div className="flex justify-between text-[10px] text-white/50">
-                            <span>Pulau Jawa ({rq1Stats.javaArtistPct}%)</span>
-                            <span>Luar Jawa ({rq1Stats.outsideArtistPct}%)</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-bold text-white/90">Pangsa Pengikut Jawa vs Luar Jawa</span>
-                            <span className="text-sky-400 font-bold">{rq1Stats.javaFollowersPct}% Jawa</span>
-                          </div>
-                          <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden flex border border-white/5">
-                            <motion.div
-                              className="bg-sky-500 h-full"
-                              initial={{ width: 0 }}
-                              animate={{ width: `${rq1Stats.javaFollowersPct}%` }}
-                              transition={{ duration: 0.8, ease: "easeOut" }}
-                            />
-                          </div>
-                          <div className="flex justify-between text-[10px] text-white/50">
-                            <span>Pulau Jawa ({rq1Stats.javaFollowersPct}%)</span>
-                            <span>Luar Jawa ({rq1Stats.outsideFollowersPct}%)</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Island Comparison Table */}
-                      <div className="flex flex-col gap-3">
-                        <Text variant="label" className="font-bold text-white/90">
-                          Distribusi Lengkap Berdasarkan Pulau
-                        </Text>
-                        <div className="border border-white/5 rounded-xl overflow-hidden bg-black/20">
-                          <div className="grid grid-cols-4 p-3 bg-white/5 border-b border-white/5 text-[10px] font-bold text-white/60 uppercase tracking-wider">
-                            <span>Nama Pulau</span>
-                            <span className="text-center">Jumlah Musisi</span>
-                            <span className="text-right">Total Followers</span>
-                            <span className="text-right">Kontribusi Pangsa</span>
-                          </div>
-                          {islandStats.map((island) => (
-                            <div
-                              key={island.name}
-                              className="grid grid-cols-4 p-3 border-b border-white/5 last:border-b-0 hover:bg-white/2 transition-colors text-xs items-center"
-                            >
-                              <span className="font-bold text-white">{island.name}</span>
-                              <span className="text-center text-white">{island.count}</span>
-                              <span className="text-right text-(--color-text-secondary)">{formatFollowers(island.followers)}</span>
-                              <span className="text-right text-teal-400 font-bold">{island.pctShare}%</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 2. PROVINSI GRANULARITY DISPLAY */}
-                  {rq1Granularity === "provinsi" && (
-                    <div className="flex flex-col gap-3">
-                      <Text variant="label" className="font-bold text-white/90">
-                        Peringkat 10 Provinsi Teratas Asal Musisi
-                      </Text>
-                      <div className="border border-white/5 rounded-xl overflow-hidden bg-black/20">
-                        <div className="grid grid-cols-4 p-3 bg-white/5 border-b border-white/5 text-[10px] font-bold text-white/60 uppercase tracking-wider">
-                          <span>Nama Provinsi</span>
-                          <span className="text-center">Jumlah Musisi</span>
-                          <span className="text-right">Pangsa (%)</span>
-                          <span className="text-right font-medium">Avg Popularity</span>
-                        </div>
-                        {provinceStats.map((prov, idx) => (
-                          <div
-                            key={prov.name}
-                            className="grid grid-cols-4 p-3 border-b border-white/5 last:border-b-0 hover:bg-white/2 transition-colors text-xs items-center"
-                          >
-                            <div className="flex items-center gap-2 font-semibold text-white">
-                              <span className="text-white/40 font-mono w-4">{idx + 1}.</span>
-                              <span>{prov.name}</span>
-                            </div>
-                            <span className="text-center text-white font-bold">{prov.count}</span>
-                            <span className="text-right text-(--color-text-secondary)">{prov.pctShare}%</span>
-                            <div className="flex items-center justify-end gap-1.5">
-                              <span className="font-bold text-teal-400">{prov.avgPopularity}</span>
-                              <div className="w-12 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                                <div
-                                  className="bg-teal-500 h-full"
-                                  style={{ width: `${prov.avgPopularity}%` }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 3. KOTA GRANULARITY DISPLAY */}
-                  {rq1Granularity === "kota" && (
-                    <div className="flex flex-col lg:flex-row gap-6 items-stretch">
-                      {/* Left Column: Spatial Inequality Metrics */}
-                      <div className="flex flex-col gap-4 lg:w-1/3">
-                        <div className="bg-white/2 border border-white/5 rounded-xl p-4 flex flex-col gap-4">
-                          <Text variant="label" className="font-bold text-white/95 text-xs tracking-wider uppercase">
-                            Indikator Sentralisasi & Ketimpangan
-                          </Text>
-                          
-                          {/* Jakarta Centralization Index */}
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex justify-between items-center text-xs">
-                              <div className="relative flex items-center gap-1 group/tooltip">
-                                <span className="text-white/70 text-[11px] cursor-help">Jakarta Centralization (JCI)</span>
-                                <Question size={14} className="text-white/40 hover:text-white cursor-help transition-colors" />
-                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-80 p-4 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
-                                  <div className="text-xs font-bold text-teal-400 mb-1">Jakarta Centralization Index (JCI)</div>
-                                  <div className="text-[10px] text-teal-400/90 font-mono mb-2">Formula: (Musisi Jkt / Total Musisi) × 100%</div>
-                                  <div className="text-[11px] text-white/80 leading-relaxed font-normal">
-                                    Mengukur konsentrasi talenta di ibu kota. Indeks tinggi menunjukkan struktur pasar yang Jakarta-sentris, mencerminkan ketimpangan akses infrastruktur industri musik di daerah lain.
-                                  </div>
+                  <AnimatePresence mode="wait">
+                    {isRq1Transitioning ? (
+                      <motion.div
+                        key="rq1-skeleton"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        {/* Skeleton layout based on target mode */}
+                        {rq1Granularity === "pulau" && (
+                          <div className="flex flex-col gap-6 animate-pulse">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/2 p-5 rounded-xl border border-white/5">
+                              <div className="flex flex-col gap-3">
+                                <div className="flex justify-between">
+                                  <Skeleton className="h-4 w-1/2 rounded bg-white/10" />
+                                  <Skeleton className="h-4 w-12 rounded bg-white/10" />
                                 </div>
+                                <Skeleton className="h-3 w-full rounded-full bg-white/10" />
+                                <Skeleton className="h-3 w-1/3 rounded bg-white/10" />
                               </div>
-                              <span className="font-bold text-teal-400">{rq1Stats.jci}%</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                              <motion.div
-                                className="bg-teal-500 h-full"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${rq1Stats.jci}%` }}
-                                transition={{ duration: 0.8, ease: "easeOut" }}
-                              />
-                            </div>
-                            <span className="text-[9px] text-white/40">
-                              Proporsi musisi populer nasional yang terpusat di wilayah DKI Jakarta.
-                            </span>
-                          </div>
-
-                          {/* Java Dominance Ratio (Followers) */}
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex justify-between items-center text-xs">
-                              <div className="relative flex items-center gap-1 group/tooltip">
-                                <span className="text-white/70 text-[11px] cursor-help">Java Dominance Ratio (JDR)</span>
-                                <Question size={14} className="text-white/40 hover:text-white cursor-help transition-colors" />
-                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-80 p-4 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
-                                  <div className="text-xs font-bold text-sky-400 mb-1">Java Dominance Ratio (JDR)</div>
-                                  <div className="text-[10px] text-sky-400/90 font-mono mb-2">Formula: (Followers Jawa / Total Followers) × 100%</div>
-                                  <div className="text-[11px] text-white/80 leading-relaxed font-normal">
-                                    Mengukur dominasi komersial musisi asal Jawa dalam menggaet pangsa pengikut digital nasional. Rasio tinggi menyoroti hegemoni pasar pendengar yang timpang di luar Jawa.
-                                  </div>
+                              <div className="flex flex-col gap-3">
+                                <div className="flex justify-between">
+                                  <Skeleton className="h-4 w-1/2 rounded bg-white/10" />
+                                  <Skeleton className="h-4 w-12 rounded bg-white/10" />
                                 </div>
+                                <Skeleton className="h-3 w-full rounded-full bg-white/10" />
+                                <Skeleton className="h-3 w-1/3 rounded bg-white/10" />
                               </div>
-                              <span className="font-bold text-sky-400">{rq1Stats.javaFollowersPct}%</span>
                             </div>
-                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                              <motion.div
-                                className="bg-sky-500 h-full"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${rq1Stats.javaFollowersPct}%` }}
-                                transition={{ duration: 0.8, ease: "easeOut" }}
-                              />
-                            </div>
-                            <span className="text-[9px] text-white/40">
-                              Penguasaan pangsa pasar pengikut (followers) digital oleh musisi asal Jawa.
-                            </span>
-                          </div>
-
-                          {/* Outer-Java Popularity Gap */}
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex justify-between items-center text-xs">
-                              <div className="relative flex items-center gap-1 group/tooltip">
-                                <span className="text-white/70 text-[11px] cursor-help">Outer-Java Popularity Gap</span>
-                                <Question size={14} className="text-white/40 hover:text-white cursor-help transition-colors" />
-                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-80 p-4 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
-                                  <div className="text-xs font-bold text-rose-400 mb-1">Outer-Java Popularity Gap</div>
-                                  <div className="text-[10px] text-rose-400/90 font-mono mb-2">Formula: |Rerata Pop Jawa - Rerata Pop Luar Jawa|</div>
-                                  <div className="text-[11px] text-white/80 leading-relaxed font-normal">
-                                    Selisih rata-rata skor popularitas musisi di Pulau Jawa vs Luar Jawa. Kesenjangan tinggi menunjukkan musisi luar Jawa menghadapi hambatan eksposur yang signifikan.
-                                  </div>
+                            <div className="flex flex-col gap-3">
+                              <Skeleton className="h-4 w-1/4 rounded bg-white/10" />
+                              <div className="border border-white/5 rounded-xl overflow-hidden bg-black/20 p-3 flex flex-col gap-3">
+                                <div className="grid grid-cols-4 p-3 bg-white/5 border-b border-white/5">
+                                  <Skeleton className="h-3 w-1/2 rounded bg-white/10" />
+                                  <Skeleton className="h-3 w-12 rounded bg-white/10 justify-self-center" />
+                                  <Skeleton className="h-3 w-16 rounded bg-white/10 justify-self-end" />
+                                  <Skeleton className="h-3 w-10 rounded bg-white/10 justify-self-end" />
                                 </div>
+                                {[...Array(3)].map((_, i) => (
+                                  <div key={i} className="grid grid-cols-4 p-3 border-b border-white/5 last:border-b-0">
+                                    <Skeleton className="h-4 w-1/2 rounded bg-white/10" />
+                                    <Skeleton className="h-4 w-10 rounded bg-white/10 justify-self-center" />
+                                    <Skeleton className="h-4 w-16 rounded bg-white/10 justify-self-end" />
+                                    <Skeleton className="h-4 w-8 rounded bg-white/10 justify-self-end" />
+                                  </div>
+                                ))}
                               </div>
-                              <span className="font-bold text-rose-400">{rq1Stats.popGap} Poin</span>
                             </div>
-                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                              <motion.div
-                                className="bg-rose-500 h-full"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${(rq1Stats.popGap / 100) * 100}%` }}
-                                transition={{ duration: 0.8, ease: "easeOut" }}
-                              />
-                            </div>
-                            <span className="text-[9px] text-white/40">
-                              Selisih rata-rata skor popularitas musisi di Pulau Jawa vs Luar Jawa.
-                            </span>
                           </div>
-                        </div>
+                        )}
 
-                        <div className="bg-teal-500/5 border border-teal-500/10 rounded-xl p-4 flex gap-3 items-start">
-                          <Info size={16} className="text-teal-400 shrink-0" />
-                          <div className="flex flex-col gap-1">
-                            <span className="text-xs font-bold text-white">Sinkronisasi Peta</span>
-                            <span className="text-[10px] text-white/60 leading-relaxed">
-                              Klik nama kota pada tabel di samping untuk membuka laci profil kota, sama seperti mengeklik marker di peta interaktif.
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right Column: Interactive Searchable Table */}
-                      <div className="flex-1 flex flex-col gap-4">
-                        {/* Search & Sort Panel */}
-                        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-                          {/* Search */}
-                          <div className="relative flex-1">
-                            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-                            <input
-                              type="text"
-                              placeholder="Cari nama kota..."
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                              className="w-full pl-9 pr-4 py-2 bg-black/40 border border-white/10 rounded-lg text-xs text-white placeholder-white/30 focus:outline-none focus:border-teal-500/50 transition-colors"
-                            />
-                          </div>
-
-                          {/* Sort Controls */}
-                          <div className="flex items-center gap-2 shrink-0">
-                            <ArrowsDownUp size={14} className="text-white/40" />
-                            <span className="text-[10px] font-bold text-white/50 uppercase">Urutkan:</span>
-                            <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
-                              {[
-                                { label: "Musisi", id: "count" },
-                                { label: "Followers", id: "followers" },
-                                { label: "Populer", id: "popularity" },
-                                { label: "Nama", id: "name" },
-                              ].map((opt) => (
-                                <button
-                                  key={opt.id}
-                                  onClick={() => setSortBy(opt.id as any)}
-                                  className={`px-2.5 py-1 text-[10px] font-semibold rounded transition-all cursor-pointer ${
-                                    sortBy === opt.id
-                                      ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
-                                      : "text-white/60 hover:text-white border border-transparent"
-                                  }`}
-                                >
-                                  {opt.label}
-                                </button>
+                        {rq1Granularity === "provinsi" && (
+                          <div className="flex flex-col gap-3 animate-pulse">
+                            <Skeleton className="h-4 w-1/4 rounded bg-white/10" />
+                            <div className="border border-white/5 rounded-xl overflow-hidden bg-black/20 p-3 flex flex-col gap-3">
+                              <div className="grid grid-cols-4 p-3 bg-white/5 border-b border-white/5">
+                                <Skeleton className="h-3 w-1/2 rounded bg-white/10" />
+                                <Skeleton className="h-3 w-12 rounded bg-white/10 justify-self-center" />
+                                <Skeleton className="h-3 w-16 rounded bg-white/10 justify-self-end" />
+                                <Skeleton className="h-3 w-10 rounded bg-white/10 justify-self-end" />
+                              </div>
+                              {[...Array(6)].map((_, i) => (
+                                <div key={i} className="grid grid-cols-4 p-3 border-b border-white/5 last:border-b-0">
+                                  <Skeleton className="h-4 w-1/2 rounded bg-white/10" />
+                                  <Skeleton className="h-4 w-10 rounded bg-white/10 justify-self-center" />
+                                  <Skeleton className="h-4 w-8 rounded bg-white/10 justify-self-end" />
+                                  <Skeleton className="h-4 w-16 rounded bg-white/10 justify-self-end" />
+                                </div>
                               ))}
                             </div>
                           </div>
-                        </div>
+                        )}
 
-                        {/* Scrollable Table Area */}
-                        <div className="border border-white/5 rounded-xl overflow-hidden bg-black/20 flex flex-col max-h-[380px]">
-                          {/* Header */}
-                          <div className="grid grid-cols-12 p-3 bg-white/5 border-b border-white/5 text-[10px] font-bold text-white/60 uppercase tracking-wider shrink-0">
-                            <span className="col-span-1 text-center">No</span>
-                            <span className="col-span-3">Nama Kota</span>
-                            <span className="col-span-2 text-center">Musisi</span>
-                            <span className="col-span-3 text-right">Total Followers</span>
-                            <span className="col-span-3 text-right">Rerata Popularitas</span>
-                          </div>
-
-                          {/* Body */}
-                          <div className="overflow-y-auto divide-y divide-white/5 custom-scrollbar flex-1">
-                            {filteredAndSortedCities.length === 0 ? (
-                              <div className="p-8 text-center text-xs text-white/40">
-                                Tidak ada kota yang cocok dengan kata kunci pencarian.
-                              </div>
-                            ) : (
-                              filteredAndSortedCities.map((city, idx) => {
-                                const getIslandForProvinceName = (prov: string): string => {
-                                  const p = prov.toLowerCase();
-                                  if (p.includes("jakarta") || p.includes("banten") || p.includes("jawa") || p.includes("yogyakarta")) return "Jawa";
-                                  if (p.includes("sumatera") || p.includes("aceh") || p.includes("riau") || p.includes("jambi") || p.includes("bengkulu") || p.includes("lampung") || p.includes("bangka")) return "Sumatera";
-                                  if (p.includes("sulawesi") || p.includes("gorontalo")) return "Sulawesi";
-                                  if (p.includes("bali") || p.includes("nusa tenggara") || p.includes("ntb") || p.includes("ntt")) return "Nusa Tenggara";
-                                  if (p.includes("kalimantan")) return "Kalimantan";
-                                  if (p.includes("maluku")) return "Maluku";
-                                  if (p.includes("papua")) return "Papua";
-                                  return "Lainnya";
-                                };
-
-                                const topArt = city.topArtists[0];
-                                const island = topArt ? getIslandForProvinceName(topArt.province) : "Lainnya";
-                                const islandBadgeColor = 
-                                  island === "Jawa" ? "bg-teal-500/10 text-teal-400 border-teal-500/20" :
-                                  island === "Sumatera" ? "bg-sky-500/10 text-sky-400 border-sky-500/20" :
-                                  island === "Sulawesi" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
-                                  island === "Kalimantan" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
-                                  "bg-rose-500/10 text-rose-400 border-rose-500/20";
-
-                                return (
-                                  <div
-                                    key={city.city}
-                                    onClick={() => handleCitySelect(city)}
-                                    className="grid grid-cols-12 p-3 hover:bg-white/5 transition-all text-xs items-center cursor-pointer group/row border-l-2 border-transparent hover:border-teal-500"
-                                  >
-                                    <span className="col-span-1 text-center text-white/40 font-mono">{idx + 1}</span>
-                                    <div className="col-span-3 flex flex-col min-w-0 pr-2">
-                                      <span className="font-bold text-white group-hover/row:text-teal-400 transition-colors truncate">{city.city}</span>
-                                      <div className="flex items-center gap-1.5 mt-0.5">
-                                        <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded border uppercase shrink-0 ${islandBadgeColor}`}>
-                                          {island}
-                                        </span>
-                                      </div>
+                        {rq1Granularity === "kota" && (
+                          <div className="flex flex-col lg:flex-row gap-6 items-stretch animate-pulse">
+                            <div className="flex flex-col gap-4 lg:w-1/3">
+                              <div className="bg-white/2 border border-white/5 rounded-xl p-4 flex flex-col gap-4">
+                                <Skeleton className="h-4 w-1/2 rounded bg-white/10" />
+                                {[...Array(3)].map((_, i) => (
+                                  <div key={i} className="flex flex-col gap-2">
+                                    <div className="flex justify-between">
+                                      <Skeleton className="h-3 w-1/2 rounded bg-white/10" />
+                                      <Skeleton className="h-3 w-8 rounded bg-white/10" />
                                     </div>
-                                    <span className="col-span-2 text-center text-white font-medium">{city.count}</span>
-                                    <span className="col-span-3 text-right text-(--color-text-secondary) font-mono">{formatFollowers(city.totalFollowers)}</span>
-                                    <div className="col-span-3 flex items-center justify-end gap-2 pr-1">
-                                      <span className="font-bold text-teal-400 font-mono">{city.avgPopularity}</span>
-                                      <div className="w-12 h-1 bg-white/5 rounded-full overflow-hidden border border-white/5 shrink-0 hidden sm:block">
-                                        <div
-                                          className="bg-teal-500 h-full"
-                                          style={{ width: `${city.avgPopularity}%` }}
-                                        />
-                                      </div>
+                                    <Skeleton className="h-1.5 w-full rounded bg-white/10" />
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="bg-teal-500/5 border border-teal-500/10 rounded-xl p-4 flex gap-3">
+                                <Skeleton className="h-4 w-4 rounded-full shrink-0 bg-white/10" />
+                                <div className="flex-1 flex flex-col gap-2">
+                                  <Skeleton className="h-4 w-1/3 rounded bg-white/10" />
+                                  <Skeleton className="h-6 w-full rounded bg-white/10" />
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex-1 flex flex-col gap-4">
+                              <div className="flex flex-col sm:flex-row gap-3 justify-between">
+                                <Skeleton className="h-8 w-1/3 rounded bg-white/10" />
+                                <Skeleton className="h-8 w-1/3 rounded bg-white/10" />
+                              </div>
+                              <div className="border border-white/5 rounded-xl overflow-hidden bg-black/20 p-3 flex flex-col gap-3">
+                                <div className="grid grid-cols-12 p-3 bg-white/5 border-b border-white/5">
+                                  <Skeleton className="col-span-1 h-3 w-4 rounded bg-white/10 mx-auto" />
+                                  <Skeleton className="col-span-3 h-3 w-1/2 rounded bg-white/10" />
+                                  <Skeleton className="col-span-2 h-3 w-8 rounded bg-white/10 mx-auto" />
+                                  <Skeleton className="col-span-3 h-3 w-16 rounded bg-white/10 ml-auto" />
+                                  <Skeleton className="col-span-3 h-3 w-12 rounded bg-white/10 ml-auto" />
+                                </div>
+                                {[...Array(4)].map((_, i) => (
+                                  <div key={i} className="grid grid-cols-12 p-3 border-b border-white/5 last:border-b-0">
+                                    <Skeleton className="col-span-1 h-4 w-4 rounded bg-white/10 mx-auto" />
+                                    <Skeleton className="col-span-3 h-4 w-2/3 rounded bg-white/10" />
+                                    <Skeleton className="col-span-2 h-4 w-8 rounded bg-white/10 mx-auto" />
+                                    <Skeleton className="col-span-3 h-4 w-12 rounded bg-white/10 ml-auto" />
+                                    <Skeleton className="col-span-3 h-4 w-10 rounded bg-white/10 ml-auto" />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key={rq1Granularity}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="w-full"
+                      >
+                        {/* 1. PULAU GRANULARITY DISPLAY */}
+                        {rq1Granularity === "pulau" && (
+                          <div className="flex flex-col gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/2 p-5 rounded-xl border border-white/5">
+                              {/* Java vs Outside Java representation */}
+                              <div className="flex flex-col gap-2">
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="font-bold text-white/90">Kepadatan Musisi Jawa vs Luar Jawa</span>
+                                  <span className="text-teal-400 font-bold">{rq1Stats.javaArtistPct}% Jawa</span>
+                                </div>
+                                <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden flex border border-white/5">
+                                  <motion.div
+                                    className="bg-teal-500 h-full"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${rq1Stats.javaArtistPct}%` }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }}
+                                  />
+                                </div>
+                                <div className="flex justify-between text-[10px] text-white/50">
+                                  <span>Pulau Jawa ({rq1Stats.javaArtistPct}%)</span>
+                                  <span>Luar Jawa ({rq1Stats.outsideArtistPct}%)</span>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col gap-2">
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="font-bold text-white/90">Pangsa Pengikut Jawa vs Luar Jawa</span>
+                                  <span className="text-sky-400 font-bold">{rq1Stats.javaFollowersPct}% Jawa</span>
+                                </div>
+                                <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden flex border border-white/5">
+                                  <motion.div
+                                    className="bg-sky-500 h-full"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${rq1Stats.javaFollowersPct}%` }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }}
+                                  />
+                                </div>
+                                <div className="flex justify-between text-[10px] text-white/50">
+                                  <span>Pulau Jawa ({rq1Stats.javaFollowersPct}%)</span>
+                                  <span>Luar Jawa ({rq1Stats.outsideFollowersPct}%)</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Island Comparison Table */}
+                            <div className="flex flex-col gap-3">
+                              <Text variant="label" className="font-bold text-white/90">
+                                Distribusi Lengkap Berdasarkan Pulau
+                              </Text>
+                              <div className="border border-white/5 rounded-xl overflow-hidden bg-black/20">
+                                <div className="grid grid-cols-4 p-3 bg-white/5 border-b border-white/5 text-[10px] font-bold text-white/60 uppercase tracking-wider">
+                                  <span>Nama Pulau</span>
+                                  <span className="text-center">Jumlah Musisi</span>
+                                  <span className="text-right">Total Followers</span>
+                                  <span className="text-right">Kontribusi Pangsa</span>
+                                </div>
+                                {islandStats.map((island) => (
+                                  <div
+                                    key={island.name}
+                                    className="grid grid-cols-4 p-3 border-b border-white/5 last:border-b-0 hover:bg-white/2 transition-colors text-xs items-center"
+                                  >
+                                    <span className="font-bold text-white">{island.name}</span>
+                                    <span className="text-center text-white">{island.count}</span>
+                                    <span className="text-right text-(--color-text-secondary)">{formatFollowers(island.followers)}</span>
+                                    <span className="text-right text-teal-400 font-bold">{island.pctShare}%</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 2. PROVINSI GRANULARITY DISPLAY */}
+                        {rq1Granularity === "provinsi" && (
+                          <div className="flex flex-col gap-3">
+                            <Text variant="label" className="font-bold text-white/90">
+                              Peringkat 10 Provinsi Teratas Asal Musisi
+                            </Text>
+                            <div className="border border-white/5 rounded-xl overflow-hidden bg-black/20">
+                              <div className="grid grid-cols-4 p-3 bg-white/5 border-b border-white/5 text-[10px] font-bold text-white/60 uppercase tracking-wider">
+                                <span>Nama Provinsi</span>
+                                <span className="text-center">Jumlah Musisi</span>
+                                <span className="text-right">Pangsa (%)</span>
+                                <span className="text-right font-medium">Avg Popularity</span>
+                              </div>
+                              {provinceStats.map((prov, idx) => (
+                                <div
+                                  key={prov.name}
+                                  className="grid grid-cols-4 p-3 border-b border-white/5 last:border-b-0 hover:bg-white/2 transition-colors text-xs items-center"
+                                >
+                                  <div className="flex items-center gap-2 font-semibold text-white">
+                                    <span className="text-white/40 font-mono w-4">{idx + 1}.</span>
+                                    <span>{prov.name}</span>
+                                  </div>
+                                  <span className="text-center text-white font-bold">{prov.count}</span>
+                                  <span className="text-right text-(--color-text-secondary)">{prov.pctShare}%</span>
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <span className="font-bold text-teal-400">{prov.avgPopularity}</span>
+                                    <div className="w-12 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                      <div
+                                        className="bg-teal-500 h-full"
+                                        style={{ width: `${prov.avgPopularity}%` }}
+                                      />
                                     </div>
                                   </div>
-                                );
-                              })
-                            )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                        )}
+
+                        {/* 3. KOTA GRANULARITY DISPLAY */}
+                        {rq1Granularity === "kota" && (
+                          <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+                            {/* Left Column: Spatial Inequality Metrics */}
+                            <div className="flex flex-col gap-4 lg:w-1/3">
+                              <div className="bg-white/2 border border-white/5 rounded-xl p-4 flex flex-col gap-4">
+                                <Text variant="label" className="font-bold text-white/95 text-xs tracking-wider uppercase">
+                                  Indikator Sentralisasi & Ketimpangan
+                                </Text>
+                                
+                                {/* Jakarta Centralization Index */}
+                                <div className="flex flex-col gap-1.5">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <div className="relative flex items-center gap-1 group/tooltip">
+                                      <span className="text-white/70 text-[11px] cursor-help">Jakarta Centralization (JCI)</span>
+                                      <Question size={14} className="text-white/40 hover:text-white cursor-help transition-colors" />
+                                      <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-80 p-4 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
+                                        <div className="text-xs font-bold text-teal-400 mb-1">Jakarta Centralization Index (JCI)</div>
+                                        <div className="text-[10px] text-teal-400/90 font-mono mb-2">Formula: (Musisi Jkt / Total Musisi) × 100%</div>
+                                        <div className="text-[11px] text-white/80 leading-relaxed font-normal">
+                                          Mengukur konsentrasi talenta di ibu kota. Indeks tinggi menunjukkan struktur pasar yang Jakarta-sentris, mencerminkan ketimpangan akses infrastruktur industri musik di daerah lain.
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <span className="font-bold text-teal-400">{rq1Stats.jci}%</span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                    <motion.div
+                                      className="bg-teal-500 h-full"
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${rq1Stats.jci}%` }}
+                                      transition={{ duration: 0.8, ease: "easeOut" }}
+                                    />
+                                  </div>
+                                  <span className="text-[9px] text-white/40">
+                                    Proporsi musisi populer nasional yang terpusat di wilayah DKI Jakarta.
+                                  </span>
+                                </div>
+
+                                {/* Java Dominance Ratio (Followers) */}
+                                <div className="flex flex-col gap-1.5">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <div className="relative flex items-center gap-1 group/tooltip">
+                                      <span className="text-white/70 text-[11px] cursor-help">Java Dominance Ratio (JDR)</span>
+                                      <Question size={14} className="text-white/40 hover:text-white cursor-help transition-colors" />
+                                      <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-80 p-4 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
+                                        <div className="text-xs font-bold text-sky-400 mb-1">Java Dominance Ratio (JDR)</div>
+                                        <div className="text-[10px] text-sky-400/90 font-mono mb-2">Formula: (Followers Jawa / Total Followers) × 100%</div>
+                                        <div className="text-[11px] text-white/80 leading-relaxed font-normal">
+                                          Mengukur dominasi komersial musisi asal Jawa dalam menggaet pangsa pengikut digital nasional. Rasio tinggi menyoroti hegemoni pasar pendengar yang timpang di luar Jawa.
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <span className="font-bold text-sky-400">{rq1Stats.javaFollowersPct}%</span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                    <motion.div
+                                      className="bg-sky-500 h-full"
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${rq1Stats.javaFollowersPct}%` }}
+                                      transition={{ duration: 0.8, ease: "easeOut" }}
+                                    />
+                                  </div>
+                                  <span className="text-[9px] text-white/40">
+                                    Penguasaan pangsa pasar pengikut (followers) digital oleh musisi asal Jawa.
+                                  </span>
+                                </div>
+
+                                {/* Outer-Java Popularity Gap */}
+                                <div className="flex flex-col gap-1.5">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <div className="relative flex items-center gap-1 group/tooltip">
+                                      <span className="text-white/70 text-[11px] cursor-help">Outer-Java Popularity Gap</span>
+                                      <Question size={14} className="text-white/40 hover:text-white cursor-help transition-colors" />
+                                      <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-80 p-4 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
+                                        <div className="text-xs font-bold text-rose-400 mb-1">Outer-Java Popularity Gap</div>
+                                        <div className="text-[10px] text-rose-400/90 font-mono mb-2">Formula: |Rerata Pop Jawa - Rerata Pop Luar Jawa|</div>
+                                        <div className="text-[11px] text-white/80 leading-relaxed font-normal">
+                                          Selisih rata-rata skor popularitas musisi di Pulau Jawa vs Luar Jawa. Kesenjangan tinggi menunjukkan musisi luar Jawa menghadapi hambatan eksposur yang signifikan.
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <span className="font-bold text-rose-400">{rq1Stats.popGap} Poin</span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                    <motion.div
+                                      className="bg-rose-500 h-full"
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${(rq1Stats.popGap / 100) * 100}%` }}
+                                      transition={{ duration: 0.8, ease: "easeOut" }}
+                                    />
+                                  </div>
+                                  <span className="text-[9px] text-white/40">
+                                    Selisih rata-rata skor popularitas musisi di Pulau Jawa vs Luar Jawa.
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="bg-teal-500/5 border border-teal-500/10 rounded-xl p-4 flex gap-3 items-start">
+                                <Info size={16} className="text-teal-400 shrink-0" />
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-xs font-bold text-white">Sinkronisasi Peta</span>
+                                  <span className="text-[10px] text-white/60 leading-relaxed">
+                                    Klik nama kota pada tabel di samping untuk membuka laci profil kota, sama seperti mengeklik marker di peta interaktif.
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Right Column: Interactive Searchable Table */}
+                            <div className="flex-1 flex flex-col gap-4">
+                              {/* Search & Sort Panel */}
+                              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                                {/* Search */}
+                                <div className="relative flex-1">
+                                  <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                                  <input
+                                    type="text"
+                                    placeholder="Cari nama kota..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 bg-black/40 border border-white/10 rounded-lg text-xs text-white placeholder-white/30 focus:outline-none focus:border-teal-500/50 transition-colors"
+                                  />
+                                </div>
+
+                                {/* Sort Controls */}
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <ArrowsDownUp size={14} className="text-white/40" />
+                                  <span className="text-[10px] font-bold text-white/50 uppercase">Urutkan:</span>
+                                  <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
+                                    {[
+                                      { label: "Musisi", id: "count" },
+                                      { label: "Followers", id: "followers" },
+                                      { label: "Populer", id: "popularity" },
+                                      { label: "Nama", id: "name" },
+                                    ].map((opt) => (
+                                      <button
+                                        key={opt.id}
+                                        onClick={() => setSortBy(opt.id as any)}
+                                        className={`px-2.5 py-1 text-[10px] font-semibold rounded transition-all cursor-pointer ${
+                                          sortBy === opt.id
+                                            ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
+                                            : "text-white/60 hover:text-white border border-transparent"
+                                        }`}
+                                      >
+                                        {opt.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Scrollable Table Area */}
+                              <div className="border border-white/5 rounded-xl overflow-hidden bg-black/20 flex flex-col max-h-[380px]">
+                                {/* Header */}
+                                <div className="grid grid-cols-12 p-3 bg-white/5 border-b border-white/5 text-[10px] font-bold text-white/60 uppercase tracking-wider shrink-0">
+                                  <span className="col-span-1 text-center">No</span>
+                                  <span className="col-span-3">Nama Kota</span>
+                                  <span className="col-span-2 text-center">Musisi</span>
+                                  <span className="col-span-3 text-right">Total Followers</span>
+                                  <span className="col-span-3 text-right">Rerata Popularitas</span>
+                                </div>
+
+                                {/* Body */}
+                                <div className="overflow-y-auto divide-y divide-white/5 custom-scrollbar flex-1">
+                                  {filteredAndSortedCities.length === 0 ? (
+                                    <div className="p-8 text-center text-xs text-white/40">
+                                      Tidak ada kota yang cocok dengan kata kunci pencarian.
+                                    </div>
+                                  ) : (
+                                    filteredAndSortedCities.map((city, idx) => {
+                                      const getIslandForProvinceName = (prov: string): string => {
+                                        const p = prov.toLowerCase();
+                                        if (p.includes("jakarta") || p.includes("banten") || p.includes("jawa") || p.includes("yogyakarta")) return "Jawa";
+                                        if (p.includes("sumatera") || p.includes("aceh") || p.includes("riau") || p.includes("jambi") || p.includes("bengkulu") || p.includes("lampung") || p.includes("bangka")) return "Sumatera";
+                                        if (p.includes("sulawesi") || p.includes("gorontalo")) return "Sulawesi";
+                                        if (p.includes("bali") || p.includes("nusa tenggara") || p.includes("ntb") || p.includes("ntt")) return "Nusa Tenggara";
+                                        if (p.includes("kalimantan")) return "Kalimantan";
+                                        if (p.includes("maluku")) return "Maluku";
+                                        if (p.includes("papua")) return "Papua";
+                                        return "Lainnya";
+                                      };
+
+                                      const topArt = city.topArtists[0];
+                                      const island = topArt ? getIslandForProvinceName(topArt.province) : "Lainnya";
+                                      const islandBadgeColor = 
+                                        island === "Jawa" ? "bg-teal-500/10 text-teal-400 border-teal-500/20" :
+                                        island === "Sumatera" ? "bg-sky-500/10 text-sky-400 border-sky-500/20" :
+                                        island === "Sulawesi" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                                        island === "Kalimantan" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                                        "bg-rose-500/10 text-rose-400 border-rose-500/20";
+
+                                      return (
+                                        <div
+                                          key={city.city}
+                                          onClick={() => handleCitySelect(city)}
+                                          className="grid grid-cols-12 p-3 hover:bg-white/5 transition-all text-xs items-center cursor-pointer group/row border-l-2 border-transparent hover:border-teal-500"
+                                        >
+                                          <span className="col-span-1 text-center text-white/40 font-mono">{idx + 1}</span>
+                                          <div className="col-span-3 flex flex-col min-w-0 pr-2">
+                                            <span className="font-bold text-white group-hover/row:text-teal-400 transition-colors truncate">{city.city}</span>
+                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                              <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded border uppercase shrink-0 ${islandBadgeColor}`}>
+                                                {island}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          <span className="col-span-2 text-center text-white font-medium">{city.count}</span>
+                                          <span className="col-span-3 text-right text-(--color-text-secondary) font-mono">{formatFollowers(city.totalFollowers)}</span>
+                                          <div className="col-span-3 flex items-center justify-end gap-2 pr-1">
+                                            <span className="font-bold text-teal-400 font-mono">{city.avgPopularity}</span>
+                                            <div className="w-12 h-1 bg-white/5 rounded-full overflow-hidden border border-white/5 shrink-0 hidden sm:block">
+                                              <div
+                                                className="bg-teal-500 h-full"
+                                                style={{ width: `${city.avgPopularity}%` }}
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </GlassCard>
               )}
 
