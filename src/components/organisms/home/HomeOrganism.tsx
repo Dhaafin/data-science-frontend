@@ -240,11 +240,17 @@ export default function HomeOrganism() {
     const jakartaArtistsCount = artists.filter(a => normalizeCity(a.originCity).toLowerCase() === "jakarta").length;
     const jci = totalArtists > 0 ? Math.round((jakartaArtistsCount / totalArtists) * 100) : 0;
 
-    const javaArtists = artists.filter(a => JAVA_PROVINCES.includes(a.originProvince.toLowerCase().trim()));
-    const outsideJavaArtists = artists.filter(a => !JAVA_PROVINCES.includes(a.originProvince.toLowerCase().trim()));
-    const javaAvgPop = javaArtists.length > 0 ? Math.round(javaArtists.reduce((acc, a) => acc + (a.popularity || 0), 0) / javaArtists.length) : 0;
-    const outsideJavaAvgPop = outsideJavaArtists.length > 0 ? Math.round(outsideJavaArtists.reduce((acc, a) => acc + (a.popularity || 0), 0) / outsideJavaArtists.length) : 0;
-    const popGap = Math.abs(javaAvgPop - outsideJavaAvgPop);
+    const javaArtists = artists.filter(a => {
+      const p = a.originProvince.toLowerCase().trim();
+      return p && p !== "unknown" && p !== "null" && JAVA_PROVINCES.includes(p);
+    });
+    const outsideJavaArtists = artists.filter(a => {
+      const p = a.originProvince.toLowerCase().trim();
+      return p && p !== "unknown" && p !== "null" && !JAVA_PROVINCES.includes(p);
+    });
+    const javaAvgPop = javaArtists.length > 0 ? javaArtists.reduce((acc, a) => acc + (a.popularity || 0), 0) / javaArtists.length : 0;
+    const outsideJavaAvgPop = outsideJavaArtists.length > 0 ? outsideJavaArtists.reduce((acc, a) => acc + (a.popularity || 0), 0) / outsideJavaArtists.length : 0;
+    const popGap = Math.round(Math.abs(javaAvgPop - outsideJavaAvgPop) * 10) / 10;
 
     return {
       javaArtistPct,
@@ -648,7 +654,10 @@ export default function HomeOrganism() {
 
     artists.forEach((art) => {
       const normCity = normalizeCity(art.originCity);
-      const isJava = JAVA_PROVINCES.includes(art.originProvince.toLowerCase().trim());
+      const prov = art.originProvince.toLowerCase().trim();
+      if (!prov || prov === "unknown" || prov === "null") return;
+
+      const isJava = JAVA_PROVINCES.includes(prov);
       const popularity = art.popularity || 0;
       const followers = art.followers || 0;
 
