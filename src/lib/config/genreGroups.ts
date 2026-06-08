@@ -6,14 +6,24 @@ export interface GenreGroup {
 
 export const GENRE_GROUPS: GenreGroup[] = [
   {
+    name: "Reggae, Ska & Island Vibes",
+    color: "#15803d",
+    subgenres: ["ska", "reggae"]
+  },
+  {
+    name: "Jazz & Blues Essentials",
+    color: "#06b6d4",
+    subgenres: ["jazz", "indonesian jazz", "jazz fusion", "indie jazz", "bossa nova", "christian jazz", "experimental jazz"]
+  },
+  {
+    name: "Sophisticated & City Pop",
+    color: "#0ea5e9",
+    subgenres: ["pop kreatif", "city pop"]
+  },
+  {
     name: "Mainstream Pop & Ballad",
     color: "#3b82f6",
     subgenres: ["indonesian pop", "jazz pop", "children's music", "pop"]
-  },
-  {
-    name: "Sophisticated Pop & Jazz Fusion",
-    color: "#06b6d4",
-    subgenres: ["pop kreatif", "city pop", "jazz", "indonesian jazz", "jazz fusion", "indie jazz", "bossa nova", "christian jazz", "experimental jazz"]
   },
   {
     name: "R&B, Soul & Urban Grooves",
@@ -43,7 +53,7 @@ export const GENRE_GROUPS: GenreGroup[] = [
   {
     name: "Heavy & Underground",
     color: "#dc2626",
-    subgenres: ["death metal", "black metal", "grindcore", "metalcore", "melodic death metal", "progressive metal", "drone metal", "mathcore", "punk", "skate punk", "pop punk", "ska", "metal"]
+    subgenres: ["death metal", "black metal", "grindcore", "metalcore", "melodic death metal", "progressive metal", "drone metal", "mathcore", "punk", "skate punk", "pop punk", "metal"]
   },
   {
     name: "Dangdut & Koplo",
@@ -54,6 +64,11 @@ export const GENRE_GROUPS: GenreGroup[] = [
     name: "Regional Roots & Folk",
     color: "#b45309",
     subgenres: ["lagu jawa", "lagu timur", "maluku", "batak", "sunda", "minang", "fújì", "folk"]
+  },
+  {
+    name: "Melayu Pop",
+    color: "#a21caf",
+    subgenres: ["malay", "malay pop", "malaysian pop"]
   },
   {
     name: "Spiritual & Devotional",

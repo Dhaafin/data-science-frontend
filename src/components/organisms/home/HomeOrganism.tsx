@@ -33,6 +33,33 @@ const JAVA_PROVINCES = [
 
 const SPOTLIGHT_GENRES = [
   {
+    name: "Reggae, Ska & Island Vibes",
+    displayName: "Reggae, Ska & Island Vibes",
+    description: "Musik beritme off-beat dan sinkopasi khas yang di Indonesia bermutasi menjadi subkultur dansa komunal yang masif.",
+    color: "#15803d",
+    colorClass: "from-green-500/20 to-green-600/5 hover:border-green-500/30",
+    glowClass: "shadow-green-500/10 hover:shadow-green-500/20",
+    badgeColor: "bg-green-500/10 text-green-400 border-green-500/20",
+  },
+  {
+    name: "Jazz & Blues Essentials",
+    displayName: "Jazz & Blues Essentials",
+    description: "Musik dengan harmoni kompleks dan instrumentasi improvisatif, menandakan wilayah urban kosmopolitan.",
+    color: "#06b6d4",
+    colorClass: "from-cyan-500/20 to-cyan-600/5 hover:border-cyan-500/30",
+    glowClass: "shadow-cyan-500/10 hover:shadow-cyan-500/20",
+    badgeColor: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+  },
+  {
+    name: "Sophisticated & City Pop",
+    displayName: "Sophisticated & City Pop",
+    description: "Pop urban-retro dengan aransemen canggih, synth grooves, dan progresi chord kompleks.",
+    color: "#0ea5e9",
+    colorClass: "from-sky-500/20 to-sky-600/5 hover:border-sky-500/30",
+    glowClass: "shadow-sky-500/10 hover:shadow-sky-500/20",
+    badgeColor: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+  },
+  {
     name: "Mainstream Pop & Ballad",
     displayName: "Mainstream Pop & Ballad",
     description: "Pop dengan melodi manis, ballad romantis, dan aransemen vokal yang mendominasi chart musik arus utama.",
@@ -40,15 +67,6 @@ const SPOTLIGHT_GENRES = [
     colorClass: "from-blue-500/20 to-blue-600/5 hover:border-blue-500/30",
     glowClass: "shadow-blue-500/10 hover:shadow-blue-500/20",
     badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  },
-  {
-    name: "Sophisticated Pop & Jazz Fusion",
-    displayName: "Sophisticated Pop & Jazz",
-    description: "Eksplorasi harmoni jazz, perkusi bossa nova, perkawinan vokal pop kreatif, dan progresi akord kompleks.",
-    color: "#06b6d4",
-    colorClass: "from-cyan-500/20 to-cyan-600/5 hover:border-cyan-500/30",
-    glowClass: "shadow-cyan-500/10 hover:shadow-cyan-500/20",
-    badgeColor: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
   },
   {
     name: "R&B, Soul & Urban Grooves",
@@ -121,6 +139,15 @@ const SPOTLIGHT_GENRES = [
     colorClass: "from-amber-500/20 to-amber-600/5 hover:border-amber-500/30",
     glowClass: "shadow-amber-500/10 hover:shadow-amber-500/20",
     badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  },
+  {
+    name: "Melayu Pop",
+    displayName: "Melayu Pop",
+    description: "Musik pop bercengkok khas Melayu dengan struktur melodi yang memayungi wilayah kepulauan nusantara.",
+    color: "#a21caf",
+    colorClass: "from-purple-500/20 to-purple-600/5 hover:border-purple-500/30",
+    glowClass: "shadow-purple-500/10 hover:shadow-purple-500/20",
+    badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/20",
   },
   {
     name: "Spiritual & Devotional",
