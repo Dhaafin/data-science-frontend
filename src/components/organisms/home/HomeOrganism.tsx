@@ -2,22 +2,31 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, CircleNotch } from "@phosphor-icons/react";
-import { musicService } from "@/lib/api/musicService";
+import { ArrowUp, CircleNotch, MapPin, MusicNote, ChartBar, Globe, Warning, Info } from "@phosphor-icons/react";
+import { musicService, StickinessArtistEntry } from "@/lib/api/musicService";
 import {
   Header,
   KpiBar,
   ArtistDrawer,
   MapPlaceholder,
   DatabaseExplorer,
-  ResearchQuestionsShowcase,
   Drawer,
   Footer,
 } from "@/components/organisms";
+import { ResearchPerspective } from "@/components/organisms/KpiBar";
 import type { ArtistData } from "@/components/organisms";
 import type { CityAggregate } from "@/components/organisms/InteractiveMap";
-import { Text, Badge, Divider, AnimatedCounter } from "@/components/atoms";
+import { Text, Badge, Divider, AnimatedCounter, GlassCard, Skeleton } from "@/components/atoms";
 import { Dropdown } from "@/components/molecules";
+
+const JAVA_PROVINCES = [
+  "dki jakarta",
+  "jawa barat",
+  "jawa tengah",
+  "jawa timur",
+  "di yogyakarta",
+  "banten",
+];
 
 /**
  * Home — Selasar Suara unified vertical-scroll page
@@ -32,12 +41,34 @@ export default function HomeOrganism() {
   const [selectedCity, setSelectedCity] = useState<CityAggregate | null>(null);
   const [visibleCount, setVisibleCount] = useState(10);
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [mapMode, setMapMode] = useState<'density' | 'popularity'>('density');
+  const [activePerspective, setActivePerspective] = useState<ResearchPerspective>("sebaran");
   const [cityData, setCityData] = useState<CityAggregate[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string>("Semua");
   const [selectedFormat, setSelectedFormat] = useState<string>("Semua");
   const [radiusMetric, setRadiusMetric] = useState<'followers' | 'count'>("count");
   const [availableGenres, setAvailableGenres] = useState<string[]>([]);
+  const [artists, setArtists] = useState<StickinessArtistEntry[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [genreMode, setGenreMode] = useState<"primary" | "tags">("primary");
+  const [sebaranGranularity, setSebaranGranularity] = useState<'pulau' | 'provinsi' | 'kota'>('kota');
+
+  const mapMode = activePerspective === "aksesibilitas" ? "popularity" : "density";
+
+  // Load all artists for dynamic client-side research statistics
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setIsDataLoading(true);
+        const data = await musicService.getStickinessData();
+        setArtists(data);
+      } catch (err) {
+        console.error("Failed to load raw artist dataset:", err);
+      } finally {
+        setIsDataLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const genreOptions = useMemo(() => {
     const options = [{ label: "Semua Genre", value: "Semua" }];
@@ -140,22 +171,310 @@ export default function HomeOrganism() {
     return n.toFixed(0);
   };
 
-  // Dynamic KPI Calculations based on `cityData`
-  const avgArtistsPerCity = cityData.length > 0 ? (kpiStats?.totalArtists || 0) / cityData.length : 0;
-  
-  let mostDenseCity = "N/A";
-  let maxCount = 0;
-  let mostPopularCity = "N/A";
-  let maxPop = 0;
-  let rawTotalFollowers = 0;
+  // ═══════════════════════════════════════════════════════
+  // Dynamic Calculations for the 3 Research Perspectives
+  // ═══════════════════════════════════════════════════════
+  const normalizeCity = (city: string): string => {
+    const c = city.toLowerCase().trim();
+    if (c.includes("jakarta")) return "Jakarta";
+    if (c.includes("yogyakarta") || c.includes("sleman") || c.includes("bantul")) return "Yogyakarta";
+    return city.charAt(0).toUpperCase() + city.slice(1);
+  };
 
-  cityData.forEach(c => {
-    if (c.count > maxCount) { maxCount = c.count; mostDenseCity = c.city; }
-    if (c.avgPopularity > maxPop) { maxPop = c.avgPopularity; mostPopularCity = c.city; }
-    rawTotalFollowers += c.totalFollowers;
-  });
+  // RQ1: Sebaran
+  const rq1Stats = useMemo(() => {
+    if (artists.length === 0) return null;
 
-  const totalFollowersStr = formatFollowers(rawTotalFollowers);
+    let javaCount = 0;
+    let javaFollowers = 0;
+    let totalFollowers = 0;
+
+    const cityMap = new Map<string, { name: string; count: number; followers: number; totalPop: number }>();
+
+    artists.forEach((art) => {
+      const isJava = JAVA_PROVINCES.includes(art.originProvince.toLowerCase().trim());
+      const followers = art.followers || 0;
+      totalFollowers += followers;
+
+      if (isJava) {
+        javaCount += 1;
+        javaFollowers += followers;
+      }
+
+      const normCity = normalizeCity(art.originCity);
+      const current = cityMap.get(normCity) || { name: normCity, count: 0, followers: 0, totalPop: 0 };
+      current.count += 1;
+      current.followers += followers;
+      current.totalPop += art.popularity || 0;
+      cityMap.set(normCity, current);
+    });
+
+    const totalArtists = artists.length;
+    const javaArtistPct = Math.round((javaCount / totalArtists) * 100);
+    const javaFollowersPct = totalFollowers > 0 ? Math.round((javaFollowers / totalFollowers) * 100) : 0;
+    const outsideArtistPct = 100 - javaArtistPct;
+    const outsideFollowersPct = 100 - javaFollowersPct;
+
+    const topCities = Array.from(cityMap.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .map((c) => ({
+        ...c,
+        avgPopularity: Math.round(c.totalPop / c.count),
+      }));
+
+    return {
+      javaArtistPct,
+      javaFollowersPct,
+      outsideArtistPct,
+      outsideFollowersPct,
+      topCities,
+      totalArtists,
+      totalFollowers,
+    };
+  }, [artists]);
+
+  // Island Stats calculation for below-the-fold display
+  const islandStats = useMemo(() => {
+    if (artists.length === 0) return [];
+    
+    const getIslandForProvince = (province: string): string => {
+      const p = province.toLowerCase().trim();
+      if (
+        p.includes("jakarta") ||
+        p.includes("banten") ||
+        p.includes("jawa") ||
+        p.includes("yogyakarta")
+      ) {
+        return "Jawa";
+      }
+      if (
+        p.includes("sumatera") ||
+        p.includes("aceh") ||
+        p.includes("riau") ||
+        p.includes("jambi") ||
+        p.includes("bengkulu") ||
+        p.includes("lampung") ||
+        p.includes("bangka")
+      ) {
+        return "Sumatera";
+      }
+      if (p.includes("sulawesi") || p.includes("gorontalo")) {
+        return "Sulawesi";
+      }
+      if (
+        p.includes("bali") ||
+        p.includes("nusa tenggara") ||
+        p.includes("ntb") ||
+        p.includes("ntt")
+      ) {
+        return "Nusa Tenggara";
+      }
+      if (p.includes("kalimantan")) {
+        return "Kalimantan";
+      }
+      if (p.includes("maluku")) {
+        return "Maluku";
+      }
+      if (p.includes("papua")) {
+        return "Papua";
+      }
+      return "Lainnya";
+    };
+
+    const islandMap = new Map<string, { name: string; count: number; followers: number; totalPop: number }>();
+    let grandTotalFollowers = 0;
+
+    artists.forEach((art) => {
+      const island = getIslandForProvince(art.originProvince);
+      if (island === "Lainnya") return;
+      const followers = art.followers || 0;
+      grandTotalFollowers += followers;
+
+      const current = islandMap.get(island) || { name: island, count: 0, followers: 0, totalPop: 0 };
+      current.count += 1;
+      current.followers += followers;
+      current.totalPop += art.popularity || 0;
+      islandMap.set(island, current);
+    });
+
+    return Array.from(islandMap.values())
+      .map((i) => ({
+        ...i,
+        avgPopularity: i.count > 0 ? Math.round(i.totalPop / i.count) : 0,
+        pctShare: Math.round((i.count / artists.length) * 100),
+        followersPctShare: grandTotalFollowers > 0 ? Math.round((i.followers / grandTotalFollowers) * 100) : 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [artists]);
+
+  // Province Stats calculation for below-the-fold display
+  const provinceStats = useMemo(() => {
+    if (artists.length === 0) return [];
+    
+    const provinceMap = new Map<string, { name: string; count: number; followers: number; totalPop: number }>();
+
+    artists.forEach((art) => {
+      const prov = art.originProvince.trim();
+      if (!prov || prov.toLowerCase() === "unknown") return;
+
+      const followers = art.followers || 0;
+      const current = provinceMap.get(prov) || { name: prov, count: 0, followers: 0, totalPop: 0 };
+      current.count += 1;
+      current.followers += followers;
+      current.totalPop += art.popularity || 0;
+      provinceMap.set(prov, current);
+    });
+
+    return Array.from(provinceMap.values())
+      .map((p) => ({
+        ...p,
+        avgPopularity: p.count > 0 ? Math.round(p.totalPop / p.count) : 0,
+        pctShare: Math.round((p.count / artists.length) * 100),
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 provinces
+  }, [artists]);
+
+  // RQ2: Genre Hubs
+  const rq2Stats = useMemo(() => {
+    if (artists.length === 0 || !rq1Stats) return null;
+
+    const topCityNames = rq1Stats.topCities.map((c) => c.name);
+
+    return topCityNames.map((cityName) => {
+      const cityArtists = artists.filter((art) => normalizeCity(art.originCity) === cityName);
+      const totalInCity = cityArtists.length;
+
+      const freqMap = new Map<string, number>();
+
+      if (genreMode === "primary") {
+        cityArtists.forEach((art) => {
+          const pg = art.primaryGenre ? art.primaryGenre.trim() : "Lainnya";
+          const formattedGenre = pg
+            .split(" ")
+            .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+            .join(" ");
+          freqMap.set(formattedGenre, (freqMap.get(formattedGenre) || 0) + 1);
+        });
+      } else {
+        cityArtists.forEach((art) => {
+          const tags: string[] = art.primaryGenre ? [art.primaryGenre, ...(art.genres || [])] : art.genres || [];
+          const uniqueTags = Array.from(new Set(tags.map((t: string) => t.toLowerCase().trim())));
+          uniqueTags.forEach((tag: string) => {
+            const formattedTag = tag
+              .split(" ")
+              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+              .join(" ");
+            freqMap.set(formattedTag, (freqMap.get(formattedTag) || 0) + 1);
+          });
+        });
+      }
+
+      const sortedGenres = Array.from(freqMap.entries()).sort((a, b) => b[1] - a[1]);
+      const [topGenreName, topGenreCount] = sortedGenres[0] || ["N/A", 0];
+      const dominancePct = totalInCity > 0 ? Math.round((topGenreCount / totalInCity) * 100) : 0;
+
+      return {
+        cityName,
+        topGenreName,
+        dominancePct,
+        totalInCity,
+        allGenres: sortedGenres.slice(0, 3).map(([name, count]) => ({
+          name,
+          pct: totalInCity > 0 ? Math.round((count / totalInCity) * 100) : 0,
+        })),
+      };
+    });
+  }, [artists, rq1Stats, genreMode]);
+
+  // RQ3: Aksesibilitas
+  const rq3Stats = useMemo(() => {
+    if (artists.length === 0) return null;
+
+    const groups = {
+      jakarta: { totalPop: 0, totalFollowers: 0, count: 0 },
+      javaRest: { totalPop: 0, totalFollowers: 0, count: 0 },
+      outsideJava: { totalPop: 0, totalFollowers: 0, count: 0 },
+    };
+
+    artists.forEach((art) => {
+      const normCity = normalizeCity(art.originCity);
+      const isJava = JAVA_PROVINCES.includes(art.originProvince.toLowerCase().trim());
+      const popularity = art.popularity || 0;
+      const followers = art.followers || 0;
+
+      if (normCity === "Jakarta") {
+        groups.jakarta.count += 1;
+        groups.jakarta.totalPop += popularity;
+        groups.jakarta.totalFollowers += followers;
+      } else if (isJava) {
+        groups.javaRest.count += 1;
+        groups.javaRest.totalPop += popularity;
+        groups.javaRest.totalFollowers += followers;
+      } else {
+        groups.outsideJava.count += 1;
+        groups.outsideJava.totalPop += popularity;
+        groups.outsideJava.totalFollowers += followers;
+      }
+    });
+
+    const calcGroup = (g: typeof groups.jakarta) => ({
+      count: g.count,
+      avgPopularity: g.count > 0 ? Math.round(g.totalPop / g.count) : 0,
+      avgFollowers: g.count > 0 ? Math.round(g.totalFollowers / g.count) : 0,
+    });
+
+    return {
+      jakarta: calcGroup(groups.jakarta),
+      javaRest: calcGroup(groups.javaRest),
+      outsideJava: calcGroup(groups.outsideJava),
+    };
+  }, [artists]);
+
+  const genreDiversity = useMemo(() => {
+    const genresSet = new Set(artists.map((a) => a.primaryGenre).filter(Boolean));
+    return genresSet.size;
+  }, [artists]);
+
+  const indieEpicenter = useMemo(() => {
+    const indieArtists = artists.filter((a) => (a.primaryGenre || "").toLowerCase() === "indie");
+    const counts = new Map<string, number>();
+    indieArtists.forEach((a) => {
+      const c = normalizeCity(a.originCity);
+      counts.set(c, (counts.get(c) || 0) + 1);
+    });
+    let epicenter = "Bandung";
+    let max = 0;
+    counts.forEach((count, city) => {
+      if (count > max) {
+        max = count;
+        epicenter = city;
+      }
+    });
+    return epicenter;
+  }, [artists]);
+
+  const koploEpicenter = useMemo(() => {
+    const koploArtists = artists.filter((a) => {
+      const pg = (a.primaryGenre || "").toLowerCase();
+      return pg === "dangdut" || pg === "koplo";
+    });
+    const counts = new Map<string, number>();
+    koploArtists.forEach((a) => {
+      const c = normalizeCity(a.originCity);
+      counts.set(c, (counts.get(c) || 0) + 1);
+    });
+    let epicenter = "Yogyakarta";
+    let max = 0;
+    counts.forEach((count, city) => {
+      if (count > max) {
+        max = count;
+        epicenter = city;
+      }
+    });
+    return epicenter;
+  }, [artists]);
 
   // Genre distribution inside the active city drawer
   const cityGenreDistribution = useMemo(() => {
@@ -184,6 +503,7 @@ export default function HomeOrganism() {
   else if (cityCollaborationIndex >= 20) cityArchetype = "Commercial Artist Hub";
   else cityArchetype = "Vocalist & Studio Epicenter";
 
+
   return (
     <div className="min-h-screen bg-(--color-bg-canvas) text-(--color-text-primary) flex flex-col relative">
       {/* Sticky top glassmorphic header */}
@@ -200,80 +520,160 @@ export default function HomeOrganism() {
         <div className="bg-[#121212]/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl flex flex-col mb-4 overflow-hidden">
           {/* Top Panel: KPIs & Mode selector */}
           <KpiBar
-            mapMode={mapMode}
-            onModeChange={setMapMode}
-            totalArtists={kpiStats?.totalArtists ?? 0}
-            avgArtistsPerCity={avgArtistsPerCity}
-            mostDenseCity={mostDenseCity}
-            provincesCovered={kpiStats?.provincesCovered ?? 0}
-            avgPopularity={kpiStats?.avgPopularity ?? 0}
-            mostPopularCity={mostPopularCity}
-            totalFollowers={totalFollowersStr}
-            topGenre={kpiStats?.topGenre ?? "Loading..."}
+            activePerspective={activePerspective}
+            onPerspectiveChange={setActivePerspective}
+            
+            // Perspective 1 (Sebaran)
+            totalArtists={rq1Stats?.totalArtists ?? 0}
+            javaArtistPct={rq1Stats?.javaArtistPct ?? 0}
+            javaFollowersPct={rq1Stats?.javaFollowersPct ?? 0}
+            mostDenseCity={rq1Stats?.topCities[0]?.name ?? "Jakarta"}
+            
+            // Perspective 2 (Genre)
+            topGenre={kpiStats?.topGenre ?? "Pop"}
+            genreDiversity={genreDiversity}
+            indieEpicenter={indieEpicenter}
+            koploEpicenter={koploEpicenter}
+            
+            // Perspective 3 (Aksesibilitas)
+            avgPopJakarta={rq3Stats?.jakarta.avgPopularity ?? 0}
+            avgPopJava={rq3Stats?.javaRest.avgPopularity ?? 0}
+            avgPopOutside={rq3Stats?.outsideJava.avgPopularity ?? 0}
+            gapPop={rq3Stats ? Math.abs(rq3Stats.jakarta.avgPopularity - rq3Stats.outsideJava.avgPopularity) : 0}
           />
 
           {/* Separator line */}
           <div className="h-[1px] bg-white/10 mx-4" />
 
-          {/* Bottom Panel: Filter Controls (Nested seamlessly) */}
-          <div className="flex flex-wrap items-center justify-between gap-6 p-4 pt-2">
-            {/* Left: Genre Selector */}
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Genre Utama</span>
-              <Dropdown
-                options={genreOptions}
-                value={selectedGenre}
-                onChange={setSelectedGenre}
-                className="w-48"
-              />
-            </div>
+          {/* Bottom Panel: Filter Controls (Nested seamlessly based on perspective) */}
+          <div className="flex flex-wrap items-center justify-between gap-6 p-4 pt-2 min-h-[58px]">
+            {activePerspective === "sebaran" && (
+              <>
+                {/* Left: Granularity Selector */}
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold text-teal-400 tracking-wider uppercase">Skala Wilayah</span>
+                  <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
+                    {[
+                      { label: "Pulau", value: "pulau" },
+                      { label: "Provinsi", value: "provinsi" },
+                      { label: "Kota", value: "kota" }
+                    ].map((gran) => (
+                      <button
+                        key={gran.value}
+                        onClick={() => setSebaranGranularity(gran.value as any)}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                          sebaranGranularity === gran.value
+                            ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
+                            : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                        }`}
+                      >
+                        {gran.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            {/* Center: Format Selector */}
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Format</span>
-              <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
-                {[
-                  { label: "Semua", value: "Semua" },
-                  { label: "Soloist", value: "Soloist" },
-                  { label: "Band", value: "Band" }
-                ].map((fmt) => (
-                  <button
-                    key={fmt.value}
-                    onClick={() => setSelectedFormat(fmt.value)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                      selectedFormat === fmt.value
-                        ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
-                        : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
-                    }`}
-                  >
-                    {fmt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+                {/* Center & Right: Format & Sizing selectors */}
+                <div className="flex flex-wrap items-center gap-6">
+                  {/* Format Selector */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Format</span>
+                    <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
+                      {[
+                        { label: "Semua", value: "Semua" },
+                        { label: "Soloist", value: "Soloist" },
+                        { label: "Band", value: "Band" }
+                      ].map((fmt) => (
+                        <button
+                          key={fmt.value}
+                          onClick={() => setSelectedFormat(fmt.value)}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                            selectedFormat === fmt.value
+                              ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
+                              : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                          }`}
+                        >
+                          {fmt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-            {/* Sizing Selector */}
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Ukuran Gelembung</span>
-              <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
-                {[
-                  { label: "Kepadatan Artis", value: "count" },
-                  { label: "Reach Followers", value: "followers" }
-                ].map((metric) => (
-                  <button
-                    key={metric.value}
-                    onClick={() => setRadiusMetric(metric.value as 'count' | 'followers')}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                      radiusMetric === metric.value
-                        ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
-                        : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
-                    }`}
-                  >
-                    {metric.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+                  {/* Sizing Selector */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Ukuran Gelembung</span>
+                    <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
+                      {[
+                        { label: "Kepadatan Artis", value: "count" },
+                        { label: "Reach Followers", value: "followers" }
+                      ].map((metric) => (
+                        <button
+                          key={metric.value}
+                          onClick={() => setRadiusMetric(metric.value as 'count' | 'followers')}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                            radiusMetric === metric.value
+                              ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
+                              : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                          }`}
+                        >
+                          {metric.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activePerspective === "genre" && (
+              <>
+                {/* Left: Genre Dropdown */}
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Pilih Genre</span>
+                  <Dropdown
+                    options={genreOptions}
+                    value={selectedGenre}
+                    onChange={setSelectedGenre}
+                    className="w-48"
+                  />
+                </div>
+
+                {/* Right: Toggle tags vs primary */}
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Metode Analisis</span>
+                  <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
+                    {[
+                      { label: "Genre Utama", id: "primary" },
+                      { label: "Tag Genre (Tags)", id: "tags" }
+                    ].map((mode) => (
+                      <button
+                        key={mode.id}
+                        onClick={() => setGenreMode(mode.id as any)}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                          genreMode === mode.id
+                            ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
+                            : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activePerspective === "aksesibilitas" && (
+              <>
+                <div className="flex items-center gap-2">
+                  <ChartBar size={16} className="text-rose-400" />
+                  <span className="text-xs text-white/70 font-medium">Analisis Korelasi Aksesibilitas Geografis & Popularitas</span>
+                </div>
+                <div className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">
+                  Skala Warna Peta: Biru (Rendah) ➔ Hijau (Rata-Rata) ➔ Merah (Tinggi)
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -284,6 +684,8 @@ export default function HomeOrganism() {
             selectedGenre={selectedGenre}
             selectedFormat={selectedFormat}
             radiusMetric={radiusMetric}
+            sebaranGranularity={sebaranGranularity}
+            activePerspective={activePerspective}
             onArtistClick={setSelectedArtist} 
             onCityClick={handleCitySelect} 
             onDataLoaded={setCityData}
@@ -297,9 +699,341 @@ export default function HomeOrganism() {
           Constrained to max-w-5xl for readability on wide screens
           ═══════════════════════════════════════════════════════ */}
       <main className="flex-1 w-full max-w-5xl mx-auto px-6 flex flex-col gap-16 py-12">
-        {/* Section: Research Questions Analysis Hub */}
-        <section id="research" className="scroll-mt-20">
-          <ResearchQuestionsShowcase />
+        {/* Dynamic Showcase based on Active Research Perspective */}
+        <section id="research-analysis" className="scroll-mt-20">
+          <AnimatePresence mode="wait">
+            {isDataLoading ? (
+              <GlassCard className="p-6 flex flex-col gap-6" key="skeleton-loading">
+                <Skeleton className="h-6 w-1/3 rounded" />
+                <Skeleton className="h-24 w-full rounded" />
+                <Skeleton className="h-16 w-full rounded" />
+              </GlassCard>
+            ) : (
+              <motion.div
+                key={activePerspective}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.25 }}
+              >
+                {activePerspective === "sebaran" && rq1Stats && (
+                  <GlassCard className="p-6 flex flex-col gap-6">
+                    <div>
+                      <Text variant="heading" className="font-bold text-white flex items-center gap-2">
+                        <MapPin size={20} className="text-teal-400" />
+                        Analisis Geografis: Sebaran & Kepadatan Musisi Populer
+                      </Text>
+                      <Text variant="caption" color="secondary" className="mt-1">
+                        Memvisualisasikan hegemoni spasial industri musik Indonesia berdasarkan tingkat kedalaman wilayah (Fokus: {sebaranGranularity === "pulau" ? "Skala Pulau" : sebaranGranularity === "provinsi" ? "Skala Provinsi" : "Skala Perkotaan"}).
+                      </Text>
+                    </div>
+
+                    {/* 1. PULAU GRANULARITY DISPLAY */}
+                    {sebaranGranularity === "pulau" && (
+                      <div className="flex flex-col gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/2 p-5 rounded-xl border border-white/5">
+                          {/* Java vs Outside Java representation */}
+                          <div className="flex flex-col gap-2">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="font-bold text-white/90">Kepadatan Musisi Jawa vs Luar Jawa</span>
+                              <span className="text-teal-400 font-bold">{rq1Stats.javaArtistPct}% Jawa</span>
+                            </div>
+                            <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden flex border border-white/5">
+                              <motion.div
+                                className="bg-teal-500 h-full"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${rq1Stats.javaArtistPct}%` }}
+                                transition={{ duration: 0.8, ease: "easeOut" }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-[10px] text-white/50">
+                              <span>Pulau Jawa ({rq1Stats.javaArtistPct}%)</span>
+                              <span>Luar Jawa ({rq1Stats.outsideArtistPct}%)</span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="font-bold text-white/90">Pangsa Pengikut Jawa vs Luar Jawa</span>
+                              <span className="text-sky-400 font-bold">{rq1Stats.javaFollowersPct}% Jawa</span>
+                            </div>
+                            <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden flex border border-white/5">
+                              <motion.div
+                                className="bg-sky-500 h-full"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${rq1Stats.javaFollowersPct}%` }}
+                                transition={{ duration: 0.8, ease: "easeOut" }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-[10px] text-white/50">
+                              <span>Pulau Jawa ({rq1Stats.javaFollowersPct}%)</span>
+                              <span>Luar Jawa ({rq1Stats.outsideFollowersPct}%)</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Island Comparison Table */}
+                        <div className="flex flex-col gap-3">
+                          <Text variant="label" className="font-bold text-white/90">
+                            Distribusi Lengkap Berdasarkan Pulau
+                          </Text>
+                          <div className="border border-white/5 rounded-xl overflow-hidden bg-black/20">
+                            <div className="grid grid-cols-4 p-3 bg-white/5 border-b border-white/5 text-[10px] font-bold text-white/60 uppercase tracking-wider">
+                              <span>Nama Pulau</span>
+                              <span className="text-center">Jumlah Musisi</span>
+                              <span className="text-right">Total Followers</span>
+                              <span className="text-right">Kontribusi Pangsa</span>
+                            </div>
+                            {islandStats.map((island) => (
+                              <div
+                                key={island.name}
+                                className="grid grid-cols-4 p-3 border-b border-white/5 last:border-b-0 hover:bg-white/2 transition-colors text-xs items-center"
+                              >
+                                <span className="font-bold text-white">{island.name}</span>
+                                <span className="text-center text-white">{island.count}</span>
+                                <span className="text-right text-(--color-text-secondary)">{formatFollowers(island.followers)}</span>
+                                <span className="text-right text-teal-400 font-bold">{island.pctShare}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 2. PROVINSI GRANULARITY DISPLAY */}
+                    {sebaranGranularity === "provinsi" && (
+                      <div className="flex flex-col gap-3">
+                        <Text variant="label" className="font-bold text-white/90">
+                          Peringkat 10 Provinsi Teratas Asal Musisi
+                        </Text>
+                        <div className="border border-white/5 rounded-xl overflow-hidden bg-black/20">
+                          <div className="grid grid-cols-4 p-3 bg-white/5 border-b border-white/5 text-[10px] font-bold text-white/60 uppercase tracking-wider">
+                            <span>Nama Provinsi</span>
+                            <span className="text-center">Jumlah Musisi</span>
+                            <span className="text-right">Pangsa (%)</span>
+                            <span className="text-right font-medium">Avg Popularity</span>
+                          </div>
+                          {provinceStats.map((prov, idx) => (
+                            <div
+                              key={prov.name}
+                              className="grid grid-cols-4 p-3 border-b border-white/5 last:border-b-0 hover:bg-white/2 transition-colors text-xs items-center"
+                            >
+                              <div className="flex items-center gap-2 font-semibold text-white">
+                                <span className="text-white/40 font-mono w-4">{idx + 1}.</span>
+                                <span>{prov.name}</span>
+                              </div>
+                              <span className="text-center text-white font-bold">{prov.count}</span>
+                              <span className="text-right text-(--color-text-secondary)">{prov.pctShare}%</span>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <span className="font-bold text-teal-400">{prov.avgPopularity}</span>
+                                <div className="w-12 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                  <div
+                                    className="bg-teal-500 h-full"
+                                    style={{ width: `${prov.avgPopularity}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 3. KOTA GRANULARITY DISPLAY */}
+                    {sebaranGranularity === "kota" && (
+                      <div className="flex flex-col gap-3">
+                        <Text variant="label" className="font-bold text-white/90">
+                          Top 5 Konsentrasi Kota Asal Musisi
+                        </Text>
+                        <div className="border border-white/5 rounded-xl overflow-hidden bg-black/20">
+                          <div className="grid grid-cols-4 p-3 bg-white/5 border-b border-white/5 text-[10px] font-bold text-white/60 uppercase tracking-wider">
+                            <span>Nama Kota</span>
+                            <span className="text-center">Jumlah Musisi</span>
+                            <span className="text-right">Total Followers</span>
+                            <span className="text-right font-medium">Avg Popularity</span>
+                          </div>
+                          {rq1Stats.topCities.map((city, idx) => (
+                            <div
+                              key={city.name}
+                              className="grid grid-cols-4 p-3 border-b border-white/5 last:border-b-0 hover:bg-white/2 transition-colors text-xs items-center"
+                            >
+                              <div className="flex items-center gap-2 font-semibold text-white">
+                                <span className="text-white/40 font-mono w-4">{idx + 1}.</span>
+                                <span>{city.name}</span>
+                              </div>
+                              <span className="text-center font-bold text-white">{city.count}</span>
+                              <span className="text-right text-(--color-text-secondary)">{formatFollowers(city.followers)}</span>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <span className="font-bold text-teal-400">{city.avgPopularity}</span>
+                                <div className="w-12 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                  <div
+                                    className="bg-teal-500 h-full"
+                                    style={{ width: `${city.avgPopularity}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </GlassCard>
+                )}               <span className="font-bold text-teal-400">{city.avgPopularity}</span>
+                              <div className="w-12 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                <div
+                                  className="bg-teal-500 h-full"
+                                  style={{ width: `${city.avgPopularity}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </GlassCard>
+                )}
+
+                {activePerspective === "genre" && rq2Stats && (
+                  <GlassCard className="p-6 flex flex-col gap-6">
+                    <div>
+                      <Text variant="heading" className="font-bold text-white flex items-center gap-2">
+                        <MusicNote size={20} className="text-sky-400" />
+                        Analisis Regional Hubs: Spesialisasi Konsentrasi Genre
+                      </Text>
+                      <Text variant="caption" color="secondary" className="mt-1">
+                        Memetakan dominasi genre musik teratas di 5 kota utama Indonesia (Mode: {genreMode === "primary" ? "Genre Utama" : "Tag Genre"}).
+                      </Text>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                      {rq2Stats.map((city) => (
+                        <GlassCard
+                          key={city.cityName}
+                          className="p-4 border-white/5 hover:border-teal-500/20 transition-all flex flex-col gap-4 relative overflow-hidden group"
+                        >
+                          <div>
+                            <Text variant="heading" className="font-bold text-white truncate">
+                              {city.cityName}
+                            </Text>
+                            <Text variant="caption" color="secondary">
+                              {city.totalInCity} musisi
+                            </Text>
+                          </div>
+
+                          <Divider className="my-0 opacity-30" />
+
+                          <div className="flex flex-col gap-1 bg-white/2 p-2.5 rounded-lg border border-white/5">
+                            <span className="text-[10px] text-white/50 uppercase tracking-wider font-bold">Top Genre</span>
+                            <div className="flex items-center justify-between mt-0.5">
+                              <Badge color="accent" className="font-semibold text-[10px] px-1.5">
+                                {city.topGenreName}
+                              </Badge>
+                              <span className="text-xs font-bold text-teal-400">{city.dominancePct}%</span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-[9px] text-white/40 uppercase tracking-wider font-bold">Keterwakilan</span>
+                            {city.allGenres.map((g) => (
+                              <div key={g.name} className="flex justify-between items-center text-xs">
+                                <span className="text-(--color-text-secondary) truncate max-w-[100px]">{g.name}</span>
+                                <span className="font-semibold text-white/80">{g.pct}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </GlassCard>
+                      ))}
+                    </div>
+                  </GlassCard>
+                )}
+
+                {activePerspective === "aksesibilitas" && rq3Stats && (
+                  <GlassCard className="p-6 flex flex-col gap-6">
+                    <div>
+                      <Text variant="heading" className="font-bold text-white flex items-center gap-2">
+                        <ChartBar size={20} className="text-rose-400" />
+                        Analisis Aksesibilitas: Kesenjangan Popularitas Regional
+                      </Text>
+                      <Text variant="caption" color="secondary" className="mt-1">
+                        Membandingkan rata-rata jangkauan popularitas musisi berdasarkan kluster lokasi untuk menguji hambatan industri.
+                      </Text>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                      {[
+                        {
+                          name: "Pusat Industri (DKI Jakarta)",
+                          desc: "Akses langsung ke label rekaman utama, media nasional, dan promotor komersial.",
+                          avgPop: rq3Stats.jakarta.avgPopularity,
+                          avgFollowers: rq3Stats.jakarta.avgFollowers,
+                          color: "bg-teal-500",
+                          border: "border-teal-500/20",
+                        },
+                        {
+                          name: "Penyangga Jawa (Bandung, Yogyakarta, Surabaya, dsb.)",
+                          desc: "Pusat kreativitas regional dengan jaringan komunitas mandiri (indie).",
+                          avgPop: rq3Stats.javaRest.avgPopularity,
+                          avgFollowers: rq3Stats.javaRest.avgFollowers,
+                          color: "bg-sky-500",
+                          border: "border-sky-500/20",
+                        },
+                        {
+                          name: "Luar Jawa (Sumatera, Bali, Sulawesi, Maluku, dsb.)",
+                          desc: "Hambatan jarak geografis yang signifikan dari pusat ekosistem promosi musik nasional.",
+                          avgPop: rq3Stats.outsideJava.avgPopularity,
+                          avgFollowers: rq3Stats.outsideJava.avgFollowers,
+                          color: "bg-amber-500",
+                          border: "border-amber-500/20",
+                        },
+                      ].map((zone, idx) => (
+                        <div
+                          key={zone.name}
+                          className={`flex flex-col gap-3 p-4 rounded-xl bg-white/2 border ${zone.border} relative overflow-hidden`}
+                        >
+                          <div className="flex flex-wrap justify-between items-start gap-4">
+                            <div>
+                              <Text variant="heading" className="font-bold text-white">
+                                {zone.name}
+                              </Text>
+                              <Text variant="caption" color="secondary" className="mt-0.5">
+                                {zone.desc}
+                              </Text>
+                            </div>
+                            <div className="flex items-center gap-6">
+                              <div className="text-right">
+                                <span className="text-[10px] text-white/50 block font-bold uppercase tracking-wider">Avg Followers</span>
+                                <span className="text-sm font-bold text-white">{formatFollowers(zone.avgFollowers)}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-[10px] text-white/50 block font-bold uppercase tracking-wider">Avg Popularity</span>
+                                <span className="text-lg font-bold text-teal-400">{zone.avgPop} <span className="text-xs text-white/50">/100</span></span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                            <motion.div
+                              className={`h-full ${zone.color}`}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${zone.avgPop}%` }}
+                              transition={{ duration: 0.8, delay: idx * 0.1, ease: "easeOut" }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2 items-center bg-teal-500/5 border border-teal-500/10 p-3.5 rounded-lg text-xs leading-relaxed text-(--color-text-secondary)">
+                      <Info size={16} className="text-teal-400 shrink-0" />
+                      <span>
+                        💡 <strong>Analisis RQ3</strong>: Jarak geografis terbukti berkolerasi dengan popularitas digital. Rata-rata popularitas di Jakarta (<strong>{rq3Stats.jakarta.avgPopularity}</strong>) meluncur turun pada wilayah penyangga Jawa (<strong>{rq3Stats.javaRest.avgPopularity}</strong>) dan berada di level terendah pada musisi luar Jawa (<strong>{rq3Stats.outsideJava.avgPopularity}</strong>). Kesenjangan popularitas mencapai <strong>{Math.abs(rq3Stats.jakarta.avgPopularity - rq3Stats.outsideJava.avgPopularity)} poin</strong>.
+                      </span>
+                    </div>
+                  </GlassCard>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </section>
 
         {/* Section 1.5: Database Explorer Directory */}
@@ -307,6 +1041,7 @@ export default function HomeOrganism() {
           <DatabaseExplorer onArtistSelect={setSelectedArtist} />
         </section>
       </main>
+
 
       {/* Slide-over Drawer — globally available for artist details */}
       <ArtistDrawer

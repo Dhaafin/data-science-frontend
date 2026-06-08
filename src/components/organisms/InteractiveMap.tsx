@@ -144,6 +144,8 @@ export interface MapProps {
   selectedGenre: string;
   selectedFormat: string;
   radiusMetric: 'followers' | 'count';
+  sebaranGranularity?: 'pulau' | 'provinsi' | 'kota';
+  activePerspective?: string;
   onArtistClick?: (artist: ArtistData) => void;
   onCityClick?: (city: CityAggregate) => void;
   onDataLoaded?: (data: CityAggregate[]) => void;
@@ -155,6 +157,8 @@ export default function InteractiveMap({
   selectedGenre,
   selectedFormat,
   radiusMetric,
+  sebaranGranularity = "kota",
+  activePerspective = "sebaran",
   onArtistClick,
   onCityClick,
   onDataLoaded,
@@ -163,6 +167,7 @@ export default function InteractiveMap({
   const [geoJsonData, setGeoJsonData] = useState<GeoJsonObject | null>(null);
   const [rawArtists, setRawArtists] = useState<any[]>([]);
   const [hoveredCity, setHoveredCity] = useState<CityAggregate | null>(null);
+  const [hoveredIsland, setHoveredIsland] = useState<{ name: string; count: number; totalFollowers: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch GeoJSON and raw data once on mount
@@ -303,6 +308,94 @@ export default function InteractiveMap({
     });
   }, [rawArtists, selectedGenre, selectedFormat]);
 
+  // Helper to map province to island
+  const getIslandForProvince = (province: string): string => {
+    const p = province.toLowerCase().trim();
+    if (
+      p.includes("jakarta") ||
+      p.includes("banten") ||
+      p.includes("jawa") ||
+      p.includes("yogyakarta")
+    ) {
+      return "Jawa";
+    }
+    if (
+      p.includes("sumatera") ||
+      p.includes("aceh") ||
+      p.includes("riau") ||
+      p.includes("jambi") ||
+      p.includes("bengkulu") ||
+      p.includes("lampung") ||
+      p.includes("bangka")
+    ) {
+      return "Sumatera";
+    }
+    if (p.includes("sulawesi") || p.includes("gorontalo")) {
+      return "Sulawesi";
+    }
+    if (
+      p.includes("bali") ||
+      p.includes("nusa tenggara") ||
+      p.includes("ntb") ||
+      p.includes("ntt")
+    ) {
+      return "Nusa Tenggara";
+    }
+    if (p.includes("kalimantan")) {
+      return "Kalimantan";
+    }
+    if (p.includes("maluku")) {
+      return "Maluku";
+    }
+    if (p.includes("papua")) {
+      return "Papua";
+    }
+    return "Lainnya";
+  };
+
+  // Compute island aggregates reactively
+  const islandData = useMemo(() => {
+    if (sebaranGranularity !== 'pulau') return [];
+    const islandCentroids: Record<string, [number, number]> = {
+      "Jawa": [-7.2972, 110.0163],
+      "Sumatera": [-0.5897, 102.1725],
+      "Kalimantan": [-1.2383, 114.3090],
+      "Sulawesi": [-1.6852, 120.6781],
+      "Nusa Tenggara": [-8.6500, 117.3600],
+      "Maluku": [-3.2384, 130.1452],
+      "Papua": [-4.2699, 138.0803]
+    };
+
+    const islandMap = new Map<string, { name: string; count: number; totalFollowers: number; coordinates: [number, number] }>();
+
+    Object.keys(islandCentroids).forEach((islandName) => {
+      islandMap.set(islandName, {
+        name: islandName,
+        count: 0,
+        totalFollowers: 0,
+        coordinates: islandCentroids[islandName],
+      });
+    });
+
+    rawArtists.forEach((row) => {
+      if (selectedGenre !== "Semua" && row.primary_genre?.toLowerCase() !== selectedGenre.toLowerCase()) return;
+      if (selectedFormat !== "Semua") {
+        const type = row.artist_type === "Group" ? "Band" : "Soloist";
+        if (type !== selectedFormat) return;
+      }
+      const island = getIslandForProvince(row.origin_province || "");
+      if (island === "Lainnya") return;
+      
+      const existing = islandMap.get(island);
+      if (existing) {
+        existing.count += 1;
+        existing.totalFollowers += row.followers || 0;
+      }
+    });
+
+    return Array.from(islandMap.values());
+  }, [rawArtists, sebaranGranularity, selectedGenre, selectedFormat]);
+
   // Compute province counts for Choropleth styling
   const provinceCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -418,7 +511,55 @@ export default function InteractiveMap({
         />
 
         <Pane name="cities-pane" style={{ zIndex: 500 }}>
-          {cityData.map((city: CityAggregate) => {
+          {/* 1. Pulau (Island) Granularity Mode */}
+          {activePerspective === "sebaran" && sebaranGranularity === "pulau" && islandData.map((island) => {
+            const maxIslandMetricValue = Math.max(...islandData.map((i) => radiusMetric === 'followers' ? i.totalFollowers : i.count), 1);
+            const baseRadius = 10;
+            const value = radiusMetric === 'followers' ? island.totalFollowers : island.count;
+            const ratio = value / maxIslandMetricValue;
+            const calculatedRadius = baseRadius + (ratio * 26);
+            const heatColor = "var(--color-accent-500)";
+
+            return (
+              <CircleMarker
+                key={island.name}
+                center={island.coordinates}
+                radius={calculatedRadius}
+                pane="cities-pane"
+                pathOptions={{
+                  color: heatColor,
+                  fillColor: heatColor,
+                  fillOpacity: 0.5,
+                  weight: 2,
+                }}
+                eventHandlers={{
+                  mouseover: (e) => {
+                    const marker = e.target;
+                    marker.setStyle({
+                      weight: 4,
+                      fillOpacity: 0.8,
+                      color: "var(--color-accent-400)",
+                      fillColor: "var(--color-accent-400)"
+                    });
+                    setHoveredIsland(island);
+                  },
+                  mouseout: (e) => {
+                    const marker = e.target;
+                    marker.setStyle({
+                      color: heatColor,
+                      fillColor: heatColor,
+                      fillOpacity: 0.5,
+                      weight: 2,
+                    });
+                    setHoveredIsland(null);
+                  }
+                }}
+              />
+            );
+          })}
+
+          {/* 2. Kota (City) Granularity Mode or Other Perspectives */}
+          {((activePerspective === "sebaran" && sebaranGranularity === "kota") || activePerspective !== "sebaran") && cityData.map((city: CityAggregate) => {
             const baseRadius = 6;
             const value = radiusMetric === 'followers' ? city.totalFollowers : city.count;
             const ratio = value / maxMetricValue;
@@ -493,6 +634,45 @@ export default function InteractiveMap({
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[#34d399] text-sm font-bold">{hoveredCity.count}</span>
                 <span className="text-white/60 text-xs uppercase tracking-wider font-medium">Musisi Terdaftar</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {hoveredIsland && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="absolute top-8 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none"
+          >
+            <div 
+              className="px-6 py-3 flex flex-col items-center rounded-xl shadow-2xl"
+              style={{
+                background: "rgba(18, 18, 18, 0.85)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(255, 255, 255, 0.15)"
+              }}
+            >
+              <span className="font-bold text-white text-lg tracking-wide">Wilayah: {hoveredIsland.name}</span>
+              <div className="flex items-center gap-4 mt-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[#34d399] text-sm font-bold">{hoveredIsland.count}</span>
+                  <span className="text-white/60 text-xs uppercase tracking-wider font-medium">Musisi</span>
+                </div>
+                <div className="w-[1px] h-3 bg-white/20" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sky-400 text-sm font-bold">
+                    {hoveredIsland.totalFollowers >= 1_000_000 
+                      ? `${(hoveredIsland.totalFollowers / 1_000_000).toFixed(1)}M` 
+                      : hoveredIsland.totalFollowers >= 1_000 
+                        ? `${(hoveredIsland.totalFollowers / 1_000).toFixed(0)}K` 
+                        : hoveredIsland.totalFollowers}
+                  </span>
+                  <span className="text-white/60 text-xs uppercase tracking-wider font-medium">Followers</span>
+                </div>
               </div>
             </div>
           </motion.div>

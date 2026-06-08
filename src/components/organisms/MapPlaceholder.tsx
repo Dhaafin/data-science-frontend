@@ -35,6 +35,8 @@ interface MapWrapperProps {
   selectedGenre: string;
   selectedFormat: string;
   radiusMetric: 'followers' | 'count';
+  sebaranGranularity?: 'pulau' | 'provinsi' | 'kota';
+  activePerspective?: string;
   onArtistClick: (artist: ArtistData) => void;
   onCityClick?: (city: CityAggregate) => void;
   onDataLoaded?: (data: CityAggregate[]) => void;
@@ -46,6 +48,8 @@ export function MapPlaceholder({
   selectedGenre,
   selectedFormat,
   radiusMetric,
+  sebaranGranularity = "kota",
+  activePerspective = "sebaran",
   onArtistClick,
   onCityClick,
   onDataLoaded,
@@ -76,6 +80,8 @@ export function MapPlaceholder({
         selectedGenre={selectedGenre}
         selectedFormat={selectedFormat}
         radiusMetric={radiusMetric}
+        sebaranGranularity={sebaranGranularity}
+        activePerspective={activePerspective}
         onArtistClick={onArtistClick} 
         onCityClick={onCityClick} 
         onDataLoaded={onDataLoaded}

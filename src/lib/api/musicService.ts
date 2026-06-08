@@ -617,8 +617,9 @@ export const musicService = {
       artist_type: string | null;
       origin_city: string | null;
       origin_province: string | null;
+      genre: string[] | null;
     }[]>(
-      "/music_data?select=artist_name,popularity,followers,primary_genre,profile_picture,artist_type,origin_city,origin_province&order=popularity.desc.nullslast"
+      "/music_data?select=artist_name,popularity,followers,primary_genre,profile_picture,artist_type,origin_city,origin_province,genre&order=popularity.desc.nullslast"
     );
 
     return (response.data || []).map((item) => {
@@ -637,6 +638,7 @@ export const musicService = {
         artistType: item.artist_type || "Person",
         originCity: item.origin_city || "Unknown",
         originProvince: item.origin_province || "Unknown",
+        genres: item.genre || [],
       };
     });
   },
@@ -696,4 +698,5 @@ export interface StickinessArtistEntry {
   artistType: string;
   originCity: string;
   originProvince: string;
+  genres: string[];
 }
