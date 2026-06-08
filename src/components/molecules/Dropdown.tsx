@@ -112,7 +112,7 @@ export function Dropdown({ options, value, onChange, className = "" }: DropdownP
                 left: coords.left,
                 width: coords.width,
               }}
-              className="z-[9999] bg-neutral-950/90 backdrop-blur-md border border-(--color-border-default) rounded-lg overflow-hidden shadow-xl shadow-black/50 p-1 flex flex-col gap-0.5 dropdown-portal"
+              className="z-[9999] bg-neutral-950/90 backdrop-blur-md border border-(--color-border-default) rounded-lg shadow-xl shadow-black/50 p-1 flex flex-col gap-0.5 dropdown-portal max-h-60 overflow-y-auto"
             >
               {options.map((option) => {
                 const isSelected = option.value === value;
