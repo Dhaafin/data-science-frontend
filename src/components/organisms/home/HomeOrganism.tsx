@@ -209,7 +209,6 @@ export default function HomeOrganism() {
   const [availableGenres, setAvailableGenres] = useState<string[]>([]);
   const [artists, setArtists] = useState<StickinessArtistEntry[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
-  const [genreMode, setGenreMode] = useState<"primary" | "tags">("primary");
   const [sebaranGranularity, setSebaranGranularity] = useState<'pulau' | 'provinsi' | 'kota'>('kota');
   const [selectedKpiGenreCity, setSelectedKpiGenreCity] = useState<string>("Jakarta");
   const [searchQuery, setSearchQuery] = useState("");
@@ -218,7 +217,7 @@ export default function HomeOrganism() {
   const [rq1Granularity, setRq1Granularity] = useState<'pulau' | 'provinsi' | 'kota'>('kota');
   const [isRq1Transitioning, setIsRq1Transitioning] = useState(false);
 
-  const mapMode = activePerspective === "aksesibilitas" ? "popularity" : "density";
+  const mapMode = "density";
 
   // Load all artists for dynamic client-side research statistics
   useEffect(() => {
@@ -456,28 +455,14 @@ export default function HomeOrganism() {
 
     const freqMap = new Map<string, number>();
     
-    if (genreMode === "primary") {
-      cityArtists.forEach((art) => {
-        const pg = art.primaryGenre ? art.primaryGenre.trim() : "Lainnya";
-        const formattedGenre = pg
-          .split(" ")
-          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-          .join(" ");
-        freqMap.set(formattedGenre, (freqMap.get(formattedGenre) || 0) + 1);
-      });
-    } else {
-      cityArtists.forEach((art) => {
-        const tags: string[] = art.primaryGenre ? [art.primaryGenre, ...(art.genres || [])] : art.genres || [];
-        const uniqueTags = Array.from(new Set(tags.map((t: string) => t.toLowerCase().trim())));
-        uniqueTags.forEach((tag: string) => {
-          const formattedTag = tag
-            .split(" ")
-            .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-            .join(" ");
-          freqMap.set(formattedTag, (freqMap.get(formattedTag) || 0) + 1);
-        });
-      });
-    }
+    cityArtists.forEach((art) => {
+      const pg = art.primaryGenre ? art.primaryGenre.trim() : "Lainnya";
+      const formattedGenre = pg
+        .split(" ")
+        .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(" ");
+      freqMap.set(formattedGenre, (freqMap.get(formattedGenre) || 0) + 1);
+    });
 
     if (freqMap.size === 0) {
       return {
@@ -498,7 +483,7 @@ export default function HomeOrganism() {
       leastGenreInCity,
       leastGenreInCityVal,
     };
-  }, [artists, selectedKpiGenreCity, genreMode]);
+  }, [artists, selectedKpiGenreCity]);
 
   // Compute dynamic Sebaran KPIs based on selected scale granularity and filters
   const sebaranKpis = useMemo(() => {
@@ -833,28 +818,14 @@ export default function HomeOrganism() {
 
       const freqMap = new Map<string, number>();
 
-      if (genreMode === "primary") {
-        cityArtists.forEach((art) => {
-          const pg = art.primaryGenre ? art.primaryGenre.trim() : "Lainnya";
-          const formattedGenre = pg
-            .split(" ")
-            .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-            .join(" ");
-          freqMap.set(formattedGenre, (freqMap.get(formattedGenre) || 0) + 1);
-        });
-      } else {
-        cityArtists.forEach((art) => {
-          const tags: string[] = art.primaryGenre ? [art.primaryGenre, ...(art.genres || [])] : art.genres || [];
-          const uniqueTags = Array.from(new Set(tags.map((t: string) => t.toLowerCase().trim())));
-          uniqueTags.forEach((tag: string) => {
-            const formattedTag = tag
-              .split(" ")
-              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-              .join(" ");
-            freqMap.set(formattedTag, (freqMap.get(formattedTag) || 0) + 1);
-          });
-        });
-      }
+      cityArtists.forEach((art) => {
+        const pg = art.primaryGenre ? art.primaryGenre.trim() : "Lainnya";
+        const formattedGenre = pg
+          .split(" ")
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(" ");
+        freqMap.set(formattedGenre, (freqMap.get(formattedGenre) || 0) + 1);
+      });
 
       const sortedGenres = Array.from(freqMap.entries()).sort((a, b) => b[1] - a[1]);
       const [topGenreName, topGenreCount] = sortedGenres[0] || ["N/A", 0];
@@ -871,7 +842,7 @@ export default function HomeOrganism() {
         })),
       };
     });
-  }, [artists, rq1Stats, genreMode]);
+  }, [artists, rq1Stats]);
 
   // RQ3: Aksesibilitas
   const rq3Stats = useMemo(() => {
@@ -1035,15 +1006,6 @@ export default function HomeOrganism() {
             // Perspective 1 (Sebaran)
             sebaranGranularity={sebaranGranularity}
             sebaranKpis={sebaranKpis}
-
-            // Perspective 2 (Genre)
-            genreMode={genreMode}
-            
-            // Perspective 3 (Aksesibilitas)
-            avgPopJakarta={rq3Stats?.jakarta.avgPopularity ?? 0}
-            avgPopJava={rq3Stats?.javaRest.avgPopularity ?? 0}
-            avgPopOutside={rq3Stats?.outsideJava.avgPopularity ?? 0}
-            gapPop={rq3Stats ? Math.abs(rq3Stats.jakarta.avgPopularity - rq3Stats.outsideJava.avgPopularity) : 0}
           />
 
           {/* Separator line */}
@@ -1107,39 +1069,10 @@ export default function HomeOrganism() {
             )}
 
             {activePerspective === "genre" && (
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Metode Analisis</span>
-                <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
-                  {[
-                    { label: "Genre Utama", id: "primary" },
-                    { label: "Tag Genre (Tags)", id: "tags" }
-                  ].map((mode) => (
-                    <button
-                      key={mode.id}
-                      onClick={() => setGenreMode(mode.id as any)}
-                      className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                        genreMode === mode.id
-                          ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
-                          : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
-                      }`}
-                    >
-                      {mode.label}
-                    </button>
-                  ))}
-                </div>
+              <div className="flex items-center gap-2">
+                <MusicNote size={16} className="text-sky-400" />
+                <span className="text-xs text-white/70 font-medium">Metode Analisis: Genre Utama (Berdasarkan Database)</span>
               </div>
-            )}
-
-            {activePerspective === "aksesibilitas" && (
-              <>
-                <div className="flex items-center gap-2">
-                  <ChartBar size={16} className="text-rose-400" />
-                  <span className="text-xs text-white/70 font-medium">Analisis Korelasi Aksesibilitas Geografis & Popularitas</span>
-                </div>
-                <div className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">
-                  Skala Warna Peta: Biru (Rendah) ➔ Hijau (Rata-Rata) ➔ Merah (Tinggi)
-                </div>
-              </>
             )}
           </div>
         </div>
@@ -1153,7 +1086,6 @@ export default function HomeOrganism() {
             radiusMetric={radiusMetric}
             sebaranGranularity={sebaranGranularity}
             activePerspective={activePerspective}
-            genreMode={genreMode}
             onArtistClick={setSelectedArtist} 
             onCityClick={handleCitySelect} 
             onProvinceClick={handleProvinceSelect}
