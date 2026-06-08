@@ -878,19 +878,6 @@ export default function HomeOrganism() {
                       </div>
                     )}
                   </GlassCard>
-                )}               <span className="font-bold text-teal-400">{city.avgPopularity}</span>
-                              <div className="w-12 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                                <div
-                                  className="bg-teal-500 h-full"
-                                  style={{ width: `${city.avgPopularity}%` }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </GlassCard>
                 )}
 
                 {activePerspective === "genre" && rq2Stats && (
