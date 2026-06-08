@@ -214,6 +214,7 @@ export default function HomeOrganism() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"count" | "followers" | "popularity" | "name">("count");
   const [showAllGenres, setShowAllGenres] = useState(false);
+  const [showAllCities, setShowAllCities] = useState(false);
   const [rq1Granularity, setRq1Granularity] = useState<'pulau' | 'provinsi' | 'kota'>('kota');
   const [isRq1Transitioning, setIsRq1Transitioning] = useState(false);
   const [rq2Mode, setRq2Mode] = useState<'genre' | 'city'>('genre');
@@ -832,10 +833,9 @@ export default function HomeOrganism() {
       cityMap.set(city, current);
     });
 
-    // Sort cities by artist count (descending) and take top 5
+    // Sort cities by artist count (descending)
     return Array.from(cityMap.values())
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
       .map((c) => {
         const total = c.count;
         const genres = Array.from(c.genreMap.entries())
@@ -1920,7 +1920,7 @@ export default function HomeOrganism() {
                           exit={{ opacity: 0, y: -10 }}
                           transition={{ duration: 0.25 }}
                         >
-                          {cityGenreFocusStats.map((city) => (
+                          {(showAllCities ? cityGenreFocusStats : cityGenreFocusStats.slice(0, 5)).map((city) => (
                             <div className="pb-3" key={city.cityName}>
                               <GlassCard className="p-4 border-white/5 hover:border-sky-500/20 transition-all flex flex-col gap-4 relative overflow-hidden bg-gradient-to-r from-sky-500/10 to-sky-600/5 hover:border-sky-500/20">
                                 <div className="flex justify-between items-center">
@@ -1949,7 +1949,7 @@ export default function HomeOrganism() {
                                     {city.genres.slice(0, 5).map((g) => (
                                       <div key={g.name} className="flex items-center gap-1.5 min-w-0">
                                         <span
-                                          className="w-2 h-2 rounded-full shrink-0 border border-white/10"
+                                          className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/10"
                                           style={{ backgroundColor: g.color }}
                                         />
                                         <span className="text-[10px] text-white/70 font-medium truncate">
@@ -1965,6 +1965,25 @@ export default function HomeOrganism() {
                               </GlassCard>
                             </div>
                           ))}
+
+                          {cityGenreFocusStats.length > 5 && (
+                            <button
+                              onClick={() => setShowAllCities(!showAllCities)}
+                              className="mt-2 w-full py-3 rounded-xl border border-white/5 bg-white/2 hover:bg-white/5 text-xs font-bold text-teal-400 hover:text-teal-300 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+                            >
+                              {showAllCities ? (
+                                <>
+                                  <span>Lihat Lebih Sedikit</span>
+                                  <CaretUp size={16} className="group-hover:-translate-y-0.5 transition-transform" />
+                                </>
+                              ) : (
+                                <>
+                                  <span>Lihat Lebih Banyak ({cityGenreFocusStats.length - 5} Kota Lainnya)</span>
+                                  <CaretDown size={16} className="group-hover:translate-y-0.5 transition-transform" />
+                                </>
+                              )}
+                            </button>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>
