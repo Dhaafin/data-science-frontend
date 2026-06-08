@@ -1920,7 +1920,7 @@ export default function HomeOrganism() {
                           exit={{ opacity: 0, y: -10 }}
                           transition={{ duration: 0.25 }}
                         >
-                          {(showAllCities ? cityGenreFocusStats : cityGenreFocusStats.slice(0, 5)).map((city) => (
+                          {(showAllCities ? cityGenreFocusStats.slice(0, 10) : cityGenreFocusStats.slice(0, 5)).map((city) => (
                             <div className="pb-3" key={city.cityName}>
                               <GlassCard className="p-4 border-white/5 hover:border-sky-500/20 transition-all flex flex-col gap-4 relative overflow-hidden bg-gradient-to-r from-sky-500/10 to-sky-600/5 hover:border-sky-500/20">
                                 <div className="flex justify-between items-center">
@@ -1978,7 +1978,7 @@ export default function HomeOrganism() {
                                 </>
                               ) : (
                                 <>
-                                  <span>Lihat Lebih Banyak ({cityGenreFocusStats.length - 5} Kota Lainnya)</span>
+                                  <span>Lihat Lebih Banyak ({Math.min(cityGenreFocusStats.length, 10) - 5} Kota Lainnya)</span>
                                   <CaretDown size={16} className="group-hover:translate-y-0.5 transition-transform" />
                                 </>
                               )}
