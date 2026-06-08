@@ -156,6 +156,91 @@ function getDivergingColor(value: number, avg: number, maxDiv: number) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+export interface GenreGroup {
+  name: string;
+  color: string;
+  subgenres: string[];
+}
+
+export const GENRE_GROUPS: GenreGroup[] = [
+  {
+    name: "Mainstream Pop & Ballad",
+    color: "#3b82f6",
+    subgenres: ["indonesian pop", "jazz pop", "children's music", "pop"]
+  },
+  {
+    name: "Sophisticated Pop & Jazz Fusion",
+    color: "#06b6d4",
+    subgenres: ["pop kreatif", "city pop", "jazz", "indonesian jazz", "jazz fusion", "indie jazz", "bossa nova", "christian jazz", "experimental jazz"]
+  },
+  {
+    name: "R&B, Soul & Urban Grooves",
+    color: "#f43f5e",
+    subgenres: ["indonesian r&b", "electro r&b", "r&b", "soul"]
+  },
+  {
+    name: "Hip-Hop, Rap & Electronic Beats",
+    color: "#f97316",
+    subgenres: ["indonesian hip hop", "malay rap", "j-rap", "melodic house", "moombahton", "jazz house", "hip hop", "rap", "house", "electronic"]
+  },
+  {
+    name: "J-Pop & ACG Subculture",
+    color: "#84cc16",
+    subgenres: ["j-pop", "anime", "vocaloid"]
+  },
+  {
+    name: "Classic & Heritage Rock",
+    color: "#eab308",
+    subgenres: ["indonesian rock", "indorock", "progressive rock", "rock"]
+  },
+  {
+    name: "Indie & Alternative",
+    color: "#10b981",
+    subgenres: ["indonesian indie", "indie", "indonesian indie rock", "post-rock", "grunge", "math rock", "psychedelic rock", "surf rock", "experimental", "ambient", "electroacoustic", "avant-garde", "alternative"]
+  },
+  {
+    name: "Heavy & Underground",
+    color: "#dc2626",
+    subgenres: ["death metal", "black metal", "grindcore", "metalcore", "melodic death metal", "progressive metal", "drone metal", "mathcore", "punk", "skate punk", "pop punk", "ska", "metal"]
+  },
+  {
+    name: "Dangdut & Koplo",
+    color: "#8b5cf6",
+    subgenres: ["dangdut", "koplo", "hipdut", "funkot", "breakbeat"]
+  },
+  {
+    name: "Regional Roots & Folk",
+    color: "#b45309",
+    subgenres: ["lagu jawa", "lagu timur", "maluku", "batak", "sunda", "minang", "fújì", "folk"]
+  },
+  {
+    name: "Spiritual & Devotional",
+    color: "#94a3b8",
+    subgenres: ["sholawat", "worship"]
+  }
+];
+
+export function getGenreGroupInfo(genreName: string): { name: string; color: string } {
+  const norm = genreName.toLowerCase().trim();
+  
+  // 1. Try exact or subgenre-list match first
+  for (const group of GENRE_GROUPS) {
+    if (group.subgenres.some(sub => sub.toLowerCase().trim() === norm)) {
+      return { name: group.name, color: group.color };
+    }
+  }
+  
+  // 2. Try partial match (word substring)
+  for (const group of GENRE_GROUPS) {
+    if (group.subgenres.some(sub => norm.includes(sub.toLowerCase().trim()) || sub.toLowerCase().trim().includes(norm))) {
+      return { name: group.name, color: group.color };
+    }
+  }
+
+  // 3. Fallback
+  return { name: "Other Genres", color: "#94a3b8" };
+}
+
 export interface MapProps {
   mapMode: 'density' | 'popularity';
   selectedGenre: string;
@@ -163,6 +248,7 @@ export interface MapProps {
   radiusMetric: 'followers' | 'count';
   sebaranGranularity?: 'pulau' | 'provinsi' | 'kota';
   activePerspective?: string;
+  genreMode?: 'primary' | 'tags';
   onArtistClick?: (artist: ArtistData) => void;
   onCityClick?: (city: CityAggregate) => void;
   onProvinceClick?: (province: ProvinceAggregate) => void;
@@ -177,6 +263,7 @@ export default function InteractiveMap({
   radiusMetric,
   sebaranGranularity = "kota",
   activePerspective = "sebaran",
+  genreMode = "primary",
   onArtistClick,
   onCityClick,
   onProvinceClick,
@@ -687,9 +774,13 @@ export default function InteractiveMap({
             const value = radiusMetric === 'followers' ? city.totalFollowers : city.count;
             const ratio = value / maxMetricValue;
             const calculatedRadius = baseRadius + (ratio * 24);
-            const heatColor = mapMode === 'popularity' 
+            let heatColor = mapMode === 'popularity' 
               ? getDivergingColor(city.avgPopularity, globalAvgPopularity, maxPopDivergence)
               : getDivergingColor(city.count, globalAvgCount, maxCountDivergence);
+
+            if (activePerspective === "genre" && genreMode === "primary") {
+              heatColor = getGenreGroupInfo(city.topGenre).color;
+            }
 
             return (
               <CircleMarker
@@ -845,6 +936,29 @@ export default function InteractiveMap({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Floating glassmorphic map legend */}
+      {activePerspective === "genre" && genreMode === "primary" && (
+        <div 
+          className="absolute bottom-4 left-4 z-[1000] p-4 rounded-xl shadow-2xl max-w-sm pointer-events-auto animate-fade-in"
+          style={{
+            background: "rgba(18, 18, 18, 0.85)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255, 255, 255, 0.15)"
+          }}
+        >
+          <div className="text-xs font-bold text-white mb-2.5 uppercase tracking-wider">Legenda Genre Utama</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-[10px]">
+            {GENRE_GROUPS.map((group) => (
+              <div key={group.name} className="flex items-center gap-2 text-white/80">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/10" style={{ backgroundColor: group.color }} />
+                <span className="truncate text-white/95 font-medium" title={group.name}>{group.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         .leaflet-interactive {

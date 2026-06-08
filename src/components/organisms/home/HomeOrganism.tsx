@@ -52,6 +52,7 @@ export default function HomeOrganism() {
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [genreMode, setGenreMode] = useState<"primary" | "tags">("primary");
   const [sebaranGranularity, setSebaranGranularity] = useState<'pulau' | 'provinsi' | 'kota'>('kota');
+  const [selectedKpiGenreCity, setSelectedKpiGenreCity] = useState<string>("Jakarta");
 
   const mapMode = activePerspective === "aksesibilitas" ? "popularity" : "density";
 
@@ -243,6 +244,80 @@ export default function HomeOrganism() {
       totalFollowers,
     };
   }, [artists]);
+
+  useEffect(() => {
+    if (rq1Stats && rq1Stats.topCities.length > 0) {
+      setSelectedKpiGenreCity(rq1Stats.topCities[0].name);
+    }
+  }, [rq1Stats]);
+
+  const genreCityOptions = useMemo(() => {
+    if (artists.length === 0) return [];
+    const citiesSet = new Set(artists.map((a) => normalizeCity(a.originCity)).filter(Boolean));
+    return Array.from(citiesSet)
+      .sort()
+      .map((c) => ({ label: c, value: c }));
+  }, [artists]);
+
+  const genreKpisForCity = useMemo(() => {
+    if (artists.length === 0 || !selectedKpiGenreCity) {
+      return {
+        topGenreInCity: "N/A",
+        topGenreInCityVal: 0,
+        leastGenreInCity: "N/A",
+        leastGenreInCityVal: 0,
+      };
+    }
+
+    const cityArtists = artists.filter(
+      (a) => normalizeCity(a.originCity).toLowerCase() === selectedKpiGenreCity.toLowerCase()
+    );
+
+    const freqMap = new Map<string, number>();
+    
+    if (genreMode === "primary") {
+      cityArtists.forEach((art) => {
+        const pg = art.primaryGenre ? art.primaryGenre.trim() : "Lainnya";
+        const formattedGenre = pg
+          .split(" ")
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(" ");
+        freqMap.set(formattedGenre, (freqMap.get(formattedGenre) || 0) + 1);
+      });
+    } else {
+      cityArtists.forEach((art) => {
+        const tags: string[] = art.primaryGenre ? [art.primaryGenre, ...(art.genres || [])] : art.genres || [];
+        const uniqueTags = Array.from(new Set(tags.map((t: string) => t.toLowerCase().trim())));
+        uniqueTags.forEach((tag: string) => {
+          const formattedTag = tag
+            .split(" ")
+            .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+            .join(" ");
+          freqMap.set(formattedTag, (freqMap.get(formattedTag) || 0) + 1);
+        });
+      });
+    }
+
+    if (freqMap.size === 0) {
+      return {
+        topGenreInCity: "N/A",
+        topGenreInCityVal: 0,
+        leastGenreInCity: "N/A",
+        leastGenreInCityVal: 0,
+      };
+    }
+
+    const sortedGenres = Array.from(freqMap.entries()).sort((a, b) => b[1] - a[1]);
+    const [topGenreInCity, topGenreInCityVal] = sortedGenres[0] || ["N/A", 0];
+    const [leastGenreInCity, leastGenreInCityVal] = sortedGenres[sortedGenres.length - 1] || ["N/A", 0];
+
+    return {
+      topGenreInCity,
+      topGenreInCityVal,
+      leastGenreInCity,
+      leastGenreInCityVal,
+    };
+  }, [artists, selectedKpiGenreCity, genreMode]);
 
   // Compute dynamic Sebaran KPIs based on selected scale granularity and filters
   const sebaranKpis = useMemo(() => {
@@ -687,8 +762,11 @@ export default function HomeOrganism() {
             sebaranKpis={sebaranKpis}
             
             // Perspective 2 (Genre)
-            topGenre={kpiStats?.topGenre ?? "Pop"}
-            genreDiversity={genreDiversity}
+            genreCityName={selectedKpiGenreCity}
+            topGenreInCity={genreKpisForCity.topGenreInCity}
+            topGenreInCityVal={genreKpisForCity.topGenreInCityVal}
+            leastGenreInCity={genreKpisForCity.leastGenreInCity}
+            leastGenreInCityVal={genreKpisForCity.leastGenreInCityVal}
             indieEpicenter={indieEpicenter}
             koploEpicenter={koploEpicenter}
             
@@ -761,14 +839,25 @@ export default function HomeOrganism() {
 
             {activePerspective === "genre" && (
               <>
-                {/* Left: Genre Dropdown */}
+                {/* Left: City Dropdown for KPI Bar */}
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Pilih Genre</span>
+                  <span className="text-[10px] font-bold text-sky-400 tracking-wider uppercase">Pilih Kota (KPI)</span>
+                  <Dropdown
+                    options={genreCityOptions}
+                    value={selectedKpiGenreCity}
+                    onChange={setSelectedKpiGenreCity}
+                    className="w-44"
+                  />
+                </div>
+
+                {/* Center: Genre Filter Dropdown */}
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Filter Genre Peta</span>
                   <Dropdown
                     options={genreOptions}
                     value={selectedGenre}
                     onChange={setSelectedGenre}
-                    className="w-48"
+                    className="w-44"
                   />
                 </div>
 
@@ -820,6 +909,7 @@ export default function HomeOrganism() {
             radiusMetric={radiusMetric}
             sebaranGranularity={sebaranGranularity}
             activePerspective={activePerspective}
+            genreMode={genreMode}
             onArtistClick={setSelectedArtist} 
             onCityClick={handleCitySelect} 
             onProvinceClick={handleProvinceSelect}

@@ -34,8 +34,11 @@ interface KpiBarProps {
   };
   
   // Perspective 2 (Genre) Metrics
-  topGenre: string;
-  genreDiversity: number;
+  genreCityName: string;
+  topGenreInCity: string;
+  topGenreInCityVal: number;
+  leastGenreInCity: string;
+  leastGenreInCityVal: number;
   indieEpicenter: string;
   koploEpicenter: string;
   
@@ -55,8 +58,11 @@ export function KpiBar({
   sebaranKpis,
   
   // Perspective 2
-  topGenre,
-  genreDiversity,
+  genreCityName,
+  topGenreInCity,
+  topGenreInCityVal,
+  leastGenreInCity,
+  leastGenreInCityVal,
   indieEpicenter,
   koploEpicenter,
   
@@ -184,10 +190,22 @@ export function KpiBar({
               transition={{ duration: 0.15 }}
               className="flex flex-1 gap-4 w-full"
             >
-              <KpiCard icon={MusicNotes} label="Genre Utama Teratas" value={0} formatter={() => topGenre} />
+              <KpiCard
+                icon={MusicNotes}
+                label={`Genre Terbanyak (${genreCityName})`}
+                value={topGenreInCityVal}
+                suffix=" Musisi"
+                description={topGenreInCity}
+              />
+              <KpiCard
+                icon={UsersThree}
+                label={`Genre Tersedikit (${genreCityName})`}
+                value={leastGenreInCityVal}
+                suffix=" Musisi"
+                description={leastGenreInCity}
+              />
               <KpiCard icon={Buildings} label="Episentrum Indie" value={0} formatter={() => indieEpicenter} />
               <KpiCard icon={Fire} label="Episentrum Koplo" value={0} formatter={() => koploEpicenter} />
-              <KpiCard icon={UsersThree} label="Diversitas Genre" value={genreDiversity} />
             </motion.div>
           )}
 
