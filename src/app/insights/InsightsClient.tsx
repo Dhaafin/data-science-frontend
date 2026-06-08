@@ -5,7 +5,6 @@ import {
   Header,
   PopularityFollowerShowcase,
   ArtistFormatShowcase,
-  GenreDeepDive,
   ComparativeView,
   ArtistDrawer,
   Footer,
@@ -29,10 +28,6 @@ export default function InsightsClient() {
 
         <section id="artist-format">
           <ArtistFormatShowcase />
-        </section>
-
-        <section id="genres">
-          <GenreDeepDive />
         </section>
 
         <section id="comparative">
