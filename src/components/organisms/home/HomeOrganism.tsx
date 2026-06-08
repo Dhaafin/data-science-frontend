@@ -156,7 +156,7 @@ export default function HomeOrganism() {
     setIsMounted(true);
   }, []);
 
-  const handleMouseEnterTooltip = (e: React.MouseEvent<HTMLElement>, title: string, description: string, formula?: string) => {
+  const handleMouseEnterTooltip = (e: React.MouseEvent<Element>, title: string, description: string, formula?: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setPortalTooltip({
       title,
@@ -772,6 +772,7 @@ export default function HomeOrganism() {
               name: art.name,
               profilePicture: art.profilePicture,
               popularity: art.popularity || 0,
+              followers: art.followers || 0,
               genres: art.genres || [],
               primaryGenre: art.primaryGenre,
               artistType: art.artistType,
