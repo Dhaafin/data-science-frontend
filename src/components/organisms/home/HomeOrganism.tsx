@@ -854,7 +854,7 @@ export default function HomeOrganism() {
           .sort((a, b) => b.count - a.count);
 
         return {
-          cityName: c.cityName || c.name,
+          cityName: c.name,
           totalArtists: total,
           genres,
         };
@@ -1970,6 +1970,7 @@ export default function HomeOrganism() {
                     </AnimatePresence>
                   </div>
                 </GlassCard>
+              )}
 
               {/* RQ3: Aksesibilitas Spasial */}
               {rq3Stats && (
