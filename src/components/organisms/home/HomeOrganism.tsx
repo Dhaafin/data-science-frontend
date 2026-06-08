@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp, CircleNotch, MapPin, MusicNote, ChartBar, Globe, Warning, Info, MagnifyingGlass, ArrowsDownUp, Question } from "@phosphor-icons/react";
 import { musicService, StickinessArtistEntry } from "@/lib/api/musicService";
@@ -33,7 +34,7 @@ const JAVA_PROVINCES = [
 const SPOTLIGHT_GENRES = [
   {
     name: "Mainstream Pop & Ballad",
-    displayName: "Mainstream Pop",
+    displayName: "Mainstream Pop & Ballad",
     description: "Pop dengan melodi manis, ballad romantis, dan aransemen vokal yang mendominasi chart musik arus utama.",
     color: "#3b82f6",
     colorClass: "from-blue-500/20 to-blue-600/5 hover:border-blue-500/30",
@@ -41,22 +42,40 @@ const SPOTLIGHT_GENRES = [
     badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   },
   {
-    name: "Indie & Alternative",
-    displayName: "Indie & Alternative",
-    description: "Musik independen dengan eksplorasi genre lo-fi, shoegaze, alternative rock, hingga folk kontemplatif.",
-    color: "#10b981",
-    colorClass: "from-emerald-500/20 to-emerald-600/5 hover:border-emerald-500/30",
-    glowClass: "shadow-emerald-500/10 hover:shadow-emerald-500/20",
-    badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    name: "Sophisticated Pop & Jazz Fusion",
+    displayName: "Sophisticated Pop & Jazz",
+    description: "Eksplorasi harmoni jazz, perkusi bossa nova, perkawinan vokal pop kreatif, dan progresi akord kompleks.",
+    color: "#06b6d4",
+    colorClass: "from-cyan-500/20 to-cyan-600/5 hover:border-cyan-500/30",
+    glowClass: "shadow-cyan-500/10 hover:shadow-cyan-500/20",
+    badgeColor: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
   },
   {
-    name: "Dangdut & Koplo",
-    displayName: "Dangdut & Koplo",
-    description: "Revolusi ketukan kendang tradisional Indonesia yang berpadu dengan unsur disko modern, ska, dan funk.",
-    color: "#8b5cf6",
-    colorClass: "from-violet-500/20 to-violet-600/5 hover:border-violet-500/30",
-    glowClass: "shadow-violet-500/10 hover:shadow-violet-500/20",
-    badgeColor: "bg-violet-500/10 text-violet-400 border-violet-500/20",
+    name: "R&B, Soul & Urban Grooves",
+    displayName: "R&B, Soul & Urban",
+    description: "Lantunan vokal melismatik, ketukan R&B lambat, groove bass urban yang tebal, dan ekspresi emosi soul mendalam.",
+    color: "#f43f5e",
+    colorClass: "from-rose-500/20 to-rose-600/5 hover:border-rose-500/30",
+    glowClass: "shadow-rose-500/10 hover:shadow-rose-500/20",
+    badgeColor: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+  },
+  {
+    name: "Hip-Hop, Rap & Electronic Beats",
+    displayName: "Hip-Hop & Electronic",
+    description: "Ketukan beat digital, rima rap cepat, musik dansa elektronik, dan aransemen synthesizer urban modern.",
+    color: "#f97316",
+    colorClass: "from-orange-500/20 to-orange-600/5 hover:border-orange-500/30",
+    glowClass: "shadow-orange-500/10 hover:shadow-orange-500/20",
+    badgeColor: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  },
+  {
+    name: "J-Pop & ACG Subculture",
+    displayName: "J-Pop & ACG",
+    description: "Musik kultur pop Jepang, lagu anime bertempo cepat, vokal bernada tinggi, dan pengaruh subkultur ACG.",
+    color: "#84cc16",
+    colorClass: "from-lime-500/20 to-lime-600/5 hover:border-lime-500/30",
+    glowClass: "shadow-lime-500/10 hover:shadow-lime-500/20",
+    badgeColor: "bg-lime-500/10 text-lime-400 border-lime-500/20",
   },
   {
     name: "Classic & Heritage Rock",
@@ -68,13 +87,49 @@ const SPOTLIGHT_GENRES = [
     badgeColor: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
   },
   {
-    name: "Hip-Hop, Rap & Electronic Beats",
-    displayName: "Hip-Hop & Electronic",
-    description: "Ketukan beat digital, rima rap cepat, musik dansa elektronik, dan aransemen synthesizer urban modern.",
-    color: "#f97316",
-    colorClass: "from-orange-500/20 to-orange-600/5 hover:border-orange-500/30",
-    glowClass: "shadow-orange-500/10 hover:shadow-orange-500/20",
-    badgeColor: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+    name: "Indie & Alternative",
+    displayName: "Indie & Alternative",
+    description: "Musik independen dengan eksplorasi genre lo-fi, shoegaze, alternative rock, hingga folk kontemplatif.",
+    color: "#10b981",
+    colorClass: "from-emerald-500/20 to-emerald-600/5 hover:border-emerald-500/30",
+    glowClass: "shadow-emerald-500/10 hover:shadow-emerald-500/20",
+    badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  },
+  {
+    name: "Heavy & Underground",
+    displayName: "Heavy & Underground",
+    description: "Musik metal ekstrim, hardcore punk, distorsi penuh amarah, tempo agresif, dan vokal harsh/growl.",
+    color: "#dc2626",
+    colorClass: "from-red-500/20 to-red-600/5 hover:border-red-500/30",
+    glowClass: "shadow-red-500/10 hover:shadow-red-500/20",
+    badgeColor: "bg-red-500/10 text-red-400 border-red-500/20",
+  },
+  {
+    name: "Dangdut & Koplo",
+    displayName: "Dangdut & Koplo",
+    description: "Revolusi ketukan kendang tradisional Indonesia yang berpadu dengan unsur disko modern, ska, dan funk.",
+    color: "#8b5cf6",
+    colorClass: "from-violet-500/20 to-violet-600/5 hover:border-violet-500/30",
+    glowClass: "shadow-violet-500/10 hover:shadow-violet-500/20",
+    badgeColor: "bg-violet-500/10 text-violet-400 border-violet-500/20",
+  },
+  {
+    name: "Regional Roots & Folk",
+    displayName: "Regional Roots & Folk",
+    description: "Lagu daerah berbahasa lokal (Jawa, Sunda, Batak, Minang, dsb.) dikombinasikan dengan musik akustik folk.",
+    color: "#b45309",
+    colorClass: "from-amber-500/20 to-amber-600/5 hover:border-amber-500/30",
+    glowClass: "shadow-amber-500/10 hover:shadow-amber-500/20",
+    badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  },
+  {
+    name: "Spiritual & Devotional",
+    displayName: "Spiritual & Devotional",
+    description: "Musik religi, selawat spiritual, dan kidung pemujaan yang didedikasikan untuk kontemplasi spiritual.",
+    color: "#94a3b8",
+    colorClass: "from-slate-500/20 to-slate-600/5 hover:border-slate-500/30",
+    glowClass: "shadow-slate-500/10 hover:shadow-slate-500/20",
+    badgeColor: "bg-slate-500/10 text-slate-400 border-slate-500/20",
   }
 ];
 
@@ -88,6 +143,33 @@ const SPOTLIGHT_GENRES = [
 
 export default function HomeOrganism() {
   const [selectedArtist, setSelectedArtist] = useState<ArtistData | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const [portalTooltip, setPortalTooltip] = useState<{
+    title: string;
+    description: string;
+    formula?: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const handleMouseEnterTooltip = (e: React.MouseEvent<HTMLElement>, title: string, description: string, formula?: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPortalTooltip({
+      title,
+      description,
+      formula,
+      x: rect.left + window.scrollX + rect.width / 2,
+      y: rect.top + window.scrollY,
+    });
+  };
+
+  const handleMouseLeaveTooltip = () => {
+    setPortalTooltip(null);
+  };
   const [selectedCity, setSelectedCity] = useState<CityAggregate | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<ProvinceAggregate | null>(null);
   const [visibleCount, setVisibleCount] = useState(10);
@@ -1431,14 +1513,15 @@ export default function HomeOrganism() {
                     </Text>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                  <div className="flex flex-col gap-3">
                     {genreSpotlights.map((spotlight) => (
                       <GlassCard
                         key={spotlight.name}
-                        className={`p-4 border-white/5 hover:border-teal-500/20 transition-all flex flex-col gap-4 relative overflow-hidden group bg-gradient-to-br ${spotlight.colorClass} ${spotlight.glowClass}`}
+                        className={`p-4 border-white/5 hover:border-teal-500/20 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden group bg-gradient-to-r ${spotlight.colorClass} ${spotlight.glowClass}`}
                       >
-                        <div>
-                          <div className="flex items-center gap-2 min-w-0">
+                        {/* 1. Genre Title & Description */}
+                        <div className="flex-1 min-w-0 md:pr-4">
+                          <div className="flex items-center gap-2 min-w-0 mb-1">
                             <span
                               className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/10"
                               style={{ backgroundColor: spotlight.color }}
@@ -1447,25 +1530,26 @@ export default function HomeOrganism() {
                               {spotlight.displayName}
                             </Text>
                           </div>
-                          <Text variant="caption" color="secondary" className="mt-1 line-clamp-3 text-[11px] leading-relaxed min-h-[50px]">
+                          <Text variant="caption" color="secondary" className="line-clamp-2 text-[11px] leading-relaxed">
                             {spotlight.description}
                           </Text>
                         </div>
 
-                        <Divider className="my-0 opacity-20" />
-
-                        {/* Episentrum Spasial (Scene Capital) */}
-                        <div className="flex flex-col gap-1">
+                        {/* 2. Episentrum Spasial (Scene Capital) */}
+                        <div className="w-full md:w-48 shrink-0 flex flex-col justify-center gap-0.5">
                           <div className="flex items-center justify-between text-[10px] text-white/50 uppercase tracking-wider font-bold">
-                            <div className="relative flex items-center gap-1 group/tooltip">
+                            <div className="flex items-center gap-1">
                               <span>Episentrum Spasial</span>
-                              <Question size={12} className="text-white/40 hover:text-white cursor-help transition-colors" />
-                              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-72 p-3.5 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left normal-case">
-                                <div className="text-xs font-bold text-sky-400 mb-1">Episentrum Spasial (Scene Capital)</div>
-                                <div className="text-[11px] text-white/80 leading-relaxed font-normal">
-                                  Kota di Indonesia dengan konsentrasi jumlah musisi genre ini terbanyak secara nasional. Menunjukkan pusat aktivitas komunitas dan industri genre tersebut.
-                                </div>
-                              </div>
+                              <Question
+                                size={12}
+                                className="text-white/40 hover:text-white cursor-help transition-colors"
+                                onMouseEnter={(e) => handleMouseEnterTooltip(
+                                  e,
+                                  "Episentrum Spasial (Scene Capital)",
+                                  "Kota di Indonesia dengan konsentrasi jumlah musisi genre ini terbanyak secara nasional. Menunjukkan pusat aktivitas komunitas dan industri genre tersebut."
+                                )}
+                                onMouseLeave={handleMouseLeaveTooltip}
+                              />
                             </div>
                             <span className="text-white font-mono font-semibold">{spotlight.genreCount} Musisi</span>
                           </div>
@@ -1475,18 +1559,21 @@ export default function HomeOrganism() {
                           </div>
                         </div>
 
-                        {/* Dominansi Lokal */}
-                        <div className="flex flex-col gap-1.5">
+                        {/* 3. Dominansi Lokal */}
+                        <div className="w-full md:w-48 shrink-0 flex flex-col justify-center gap-1">
                           <div className="flex items-center justify-between text-[10px] text-white/50 uppercase tracking-wider font-bold">
-                            <div className="relative flex items-center gap-1 group/tooltip flex-nowrap shrink-0 pr-1">
+                            <div className="flex items-center gap-1">
                               <span>Dominansi Lokal</span>
-                              <Question size={12} className="text-white/40 hover:text-white cursor-help transition-colors" />
-                              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-72 p-3.5 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left normal-case">
-                                <div className="text-xs font-bold text-teal-400 mb-1">Dominansi Lokal (%)</div>
-                                <div className="text-[11px] text-white/80 leading-relaxed font-normal">
-                                  Persentase musisi genre ini dibanding total musisi yang ada di kota episentrum tersebut. Rasio tinggi menunjukkan spesialisasi genre yang mendalam di ekosistem lokal kota.
-                                </div>
-                              </div>
+                              <Question
+                                size={12}
+                                className="text-white/40 hover:text-white cursor-help transition-colors"
+                                onMouseEnter={(e) => handleMouseEnterTooltip(
+                                  e,
+                                  "Dominansi Lokal (%)",
+                                  "Persentase musisi genre ini dibanding total musisi yang ada di kota episentrum tersebut. Rasio tinggi menunjukkan spesialisasi genre yang mendalam di ekosistem lokal kota."
+                                )}
+                                onMouseLeave={handleMouseLeaveTooltip}
+                              />
                             </div>
                             <span className="text-teal-400 font-bold font-mono text-xs">{spotlight.dominancePct}%</span>
                           </div>
@@ -1498,17 +1585,20 @@ export default function HomeOrganism() {
                           </div>
                         </div>
 
-                        {/* Representative Artists */}
-                        <div className="flex flex-col gap-1.5 mt-auto">
-                          <div className="relative flex items-center gap-1 group/tooltip">
+                        {/* 4. Representative Artists */}
+                        <div className="w-full md:w-44 shrink-0 flex flex-col justify-center gap-1">
+                          <div className="flex items-center gap-1">
                             <span className="text-[9px] text-white/40 uppercase tracking-wider font-bold">Representative Artists</span>
-                            <Question size={12} className="text-white/40 hover:text-white cursor-help transition-colors" />
-                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-72 p-3.5 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left normal-case">
-                              <div className="text-xs font-bold text-violet-400 mb-1">Musisi Representatif</div>
-                              <div className="text-[11px] text-white/80 leading-relaxed font-normal">
-                                Tiga musisi terpopuler asal kota episentrum tersebut berdasarkan Spotify Popularity. Klik salah satu untuk membuka profil lengkapnya.
-                              </div>
-                            </div>
+                            <Question
+                              size={12}
+                              className="text-white/40 hover:text-white cursor-help transition-colors"
+                              onMouseEnter={(e) => handleMouseEnterTooltip(
+                                e,
+                                "Musisi Representatif",
+                                "Tiga musisi terpopuler asal kota episentrum tersebut berdasarkan Spotify Popularity. Klik salah satu untuk membuka profil lengkapnya."
+                              )}
+                              onMouseLeave={handleMouseLeaveTooltip}
+                            />
                           </div>
                           <div className="flex items-center gap-2">
                             {spotlight.repArtists.map((art) => (
@@ -1988,6 +2078,28 @@ export default function HomeOrganism() {
       </Drawer>
 
       <Footer />
+
+      {/* Portal Tooltip */}
+      {isMounted && portalTooltip && createPortal(
+        <div
+          style={{
+            position: "absolute",
+            left: `${portalTooltip.x}px`,
+            top: `${portalTooltip.y}px`,
+            transform: "translate(-50%, -105%)",
+          }}
+          className="w-72 p-3.5 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl z-[9999] pointer-events-none text-left"
+        >
+          <div className="text-xs font-bold text-sky-400 mb-1">{portalTooltip.title}</div>
+          {portalTooltip.formula && (
+            <div className="text-[10px] text-teal-400/90 font-mono mb-2">{portalTooltip.formula}</div>
+          )}
+          <div className="text-[11px] text-white/80 leading-relaxed font-normal">
+            {portalTooltip.description}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
