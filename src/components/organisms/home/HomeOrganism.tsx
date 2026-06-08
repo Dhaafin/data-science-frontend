@@ -287,7 +287,7 @@ export default function HomeOrganism() {
       const list = Array.from(islandMap.entries()).map(([name, data]) => ({
         name,
         count: data.count,
-        avgPop: data.count > 0 ? Math.round(data.totalPop / data.count) : 0,
+        totalPop: data.totalPop,
       }));
 
       if (list.length === 0) {
@@ -299,17 +299,17 @@ export default function HomeOrganism() {
         };
       }
       const sortedByCount = [...list].sort((a, b) => b.count - a.count);
-      const sortedByPop = [...list].sort((a, b) => b.avgPop - a.avgPop);
+      const sortedByPop = [...list].sort((a, b) => b.totalPop - a.totalPop);
 
       return {
         mostDenseName: sortedByCount[0].name,
         mostDenseVal: sortedByCount[0].count,
         mostPopularName: sortedByPop[0].name,
-        mostPopularVal: sortedByPop[0].avgPop,
+        mostPopularVal: sortedByPop[0].totalPop,
         leastDenseName: sortedByCount[sortedByCount.length - 1].name,
         leastDenseVal: sortedByCount[sortedByCount.length - 1].count,
         leastPopularName: sortedByPop[sortedByPop.length - 1].name,
-        leastPopularVal: sortedByPop[sortedByPop.length - 1].avgPop,
+        leastPopularVal: sortedByPop[sortedByPop.length - 1].totalPop,
       };
     }
 
@@ -327,7 +327,7 @@ export default function HomeOrganism() {
       const list = Array.from(provinceMap.entries()).map(([name, data]) => ({
         name,
         count: data.count,
-        avgPop: data.count > 0 ? Math.round(data.totalPop / data.count) : 0,
+        totalPop: data.totalPop,
       }));
 
       if (list.length === 0) {
@@ -339,17 +339,17 @@ export default function HomeOrganism() {
         };
       }
       const sortedByCount = [...list].sort((a, b) => b.count - a.count);
-      const sortedByPop = [...list].sort((a, b) => b.avgPop - a.avgPop);
+      const sortedByPop = [...list].sort((a, b) => b.totalPop - a.totalPop);
 
       return {
         mostDenseName: sortedByCount[0].name,
         mostDenseVal: sortedByCount[0].count,
         mostPopularName: sortedByPop[0].name,
-        mostPopularVal: sortedByPop[0].avgPop,
+        mostPopularVal: sortedByPop[0].totalPop,
         leastDenseName: sortedByCount[sortedByCount.length - 1].name,
         leastDenseVal: sortedByCount[sortedByCount.length - 1].count,
         leastPopularName: sortedByPop[sortedByPop.length - 1].name,
-        leastPopularVal: sortedByPop[sortedByPop.length - 1].avgPop,
+        leastPopularVal: sortedByPop[sortedByPop.length - 1].totalPop,
       };
     }
 
@@ -367,7 +367,7 @@ export default function HomeOrganism() {
     const list = Array.from(cityMap.entries()).map(([name, data]) => ({
       name,
       count: data.count,
-      avgPop: data.count > 0 ? Math.round(data.totalPop / data.count) : 0,
+      totalPop: data.totalPop,
     }));
 
     if (list.length === 0) {
@@ -379,17 +379,17 @@ export default function HomeOrganism() {
       };
     }
     const sortedByCount = [...list].sort((a, b) => b.count - a.count);
-    const sortedByPop = [...list].sort((a, b) => b.avgPop - a.avgPop);
+    const sortedByPop = [...list].sort((a, b) => b.totalPop - a.totalPop);
 
     return {
       mostDenseName: sortedByCount[0].name,
       mostDenseVal: sortedByCount[0].count,
       mostPopularName: sortedByPop[0].name,
-      mostPopularVal: sortedByPop[0].avgPop,
+      mostPopularVal: sortedByPop[0].totalPop,
       leastDenseName: sortedByCount[sortedByCount.length - 1].name,
       leastDenseVal: sortedByCount[sortedByCount.length - 1].count,
       leastPopularName: sortedByPop[sortedByPop.length - 1].name,
-      leastPopularVal: sortedByPop[sortedByPop.length - 1].avgPop,
+      leastPopularVal: sortedByPop[sortedByPop.length - 1].totalPop,
     };
   }, [artists, selectedGenre, selectedFormat, sebaranGranularity]);
 
