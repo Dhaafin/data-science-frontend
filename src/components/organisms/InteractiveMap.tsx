@@ -112,6 +112,13 @@ function matchProvinceName(dbProv: string, geoProv: string): boolean {
   const geo = geoProv.toLowerCase().trim();
   
   if (db === geo) return true;
+  
+  // Strip whitespace for space-insensitive matches (e.g. Nusa Tenggara Barat vs Nusatenggara Barat)
+  const dbClean = db.replace(/\s+/g, "");
+  const geoClean = geo.replace(/\s+/g, "");
+  if (dbClean === geoClean) return true;
+  if (dbClean.includes(geoClean) || geoClean.includes(dbClean)) return true;
+  
   if (db.includes(geo) || geo.includes(db)) return true;
   
   if (db === "dki jakarta" && geo.includes("jakarta")) return true;
