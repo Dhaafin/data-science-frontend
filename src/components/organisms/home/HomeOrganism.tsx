@@ -215,6 +215,7 @@ export default function HomeOrganism() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"count" | "followers" | "popularity" | "name">("count");
   const [showAllGenres, setShowAllGenres] = useState(false);
+  const [rq1Granularity, setRq1Granularity] = useState<'pulau' | 'provinsi' | 'kota'>('kota');
 
   const mapMode = activePerspective === "aksesibilitas" ? "popularity" : "density";
 
@@ -1178,18 +1179,44 @@ export default function HomeOrganism() {
             <div className="flex flex-col gap-8">
               {rq1Stats && (
                 <GlassCard className="p-6 flex flex-col gap-6">
-                  <div>
-                    <Text variant="heading" className="font-bold text-white flex items-center gap-2">
-                      <MapPin size={20} className="text-teal-400" />
-                      Analisis Geografis: Sebaran & Kepadatan Musisi Populer
-                    </Text>
-                    <Text variant="caption" color="secondary" className="mt-1">
-                      Memvisualisasikan hegemoni spasial industri musik Indonesia berdasarkan tingkat kedalaman wilayah (Fokus: {sebaranGranularity === "pulau" ? "Skala Pulau" : sebaranGranularity === "provinsi" ? "Skala Provinsi" : "Skala Perkotaan"}).
-                    </Text>
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <Text variant="heading" className="font-bold text-white flex items-center gap-2">
+                        <MapPin size={20} className="text-teal-400" />
+                        Analisis Geografis: Sebaran & Kepadatan Musisi Populer
+                      </Text>
+                      <Text variant="caption" color="secondary" className="mt-1">
+                        Memvisualisasikan hegemoni spasial industri musik Indonesia berdasarkan tingkat kedalaman wilayah (Fokus: {rq1Granularity === "pulau" ? "Skala Pulau" : rq1Granularity === "provinsi" ? "Skala Provinsi" : "Skala Perkotaan"}).
+                      </Text>
+                    </div>
+
+                    {/* Local Granularity Selector */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] font-bold text-teal-400 tracking-wider uppercase">Skala Wilayah</span>
+                      <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
+                        {[
+                          { label: "Pulau", value: "pulau" },
+                          { label: "Provinsi", value: "provinsi" },
+                          { label: "Kota", value: "kota" }
+                        ].map((gran) => (
+                          <button
+                            key={gran.value}
+                            onClick={() => setRq1Granularity(gran.value as any)}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                              rq1Granularity === gran.value
+                                ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
+                                : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                            }`}
+                          >
+                            {gran.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   {/* 1. PULAU GRANULARITY DISPLAY */}
-                  {sebaranGranularity === "pulau" && (
+                  {rq1Granularity === "pulau" && (
                     <div className="flex flex-col gap-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/2 p-5 rounded-xl border border-white/5">
                         {/* Java vs Outside Java representation */}
@@ -1261,7 +1288,7 @@ export default function HomeOrganism() {
                   )}
 
                   {/* 2. PROVINSI GRANULARITY DISPLAY */}
-                  {sebaranGranularity === "provinsi" && (
+                  {rq1Granularity === "provinsi" && (
                     <div className="flex flex-col gap-3">
                       <Text variant="label" className="font-bold text-white/90">
                         Peringkat 10 Provinsi Teratas Asal Musisi
@@ -1300,7 +1327,7 @@ export default function HomeOrganism() {
                   )}
 
                   {/* 3. KOTA GRANULARITY DISPLAY */}
-                  {sebaranGranularity === "kota" && (
+                  {rq1Granularity === "kota" && (
                     <div className="flex flex-col lg:flex-row gap-6 items-stretch">
                       {/* Left Column: Spatial Inequality Metrics */}
                       <div className="flex flex-col gap-4 lg:w-1/3">
