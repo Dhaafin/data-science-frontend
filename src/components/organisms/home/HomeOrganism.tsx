@@ -16,6 +16,7 @@ import {
 import { ResearchPerspective } from "@/components/organisms/KpiBar";
 import type { ArtistData } from "@/components/organisms";
 import type { CityAggregate, ProvinceAggregate } from "@/components/organisms/InteractiveMap";
+
 import { Text, Badge, Divider, AnimatedCounter, GlassCard, Skeleton } from "@/components/atoms";
 import { Dropdown } from "@/components/molecules";
 
@@ -760,15 +761,9 @@ export default function HomeOrganism() {
             // Perspective 1 (Sebaran)
             sebaranGranularity={sebaranGranularity}
             sebaranKpis={sebaranKpis}
-            
+
             // Perspective 2 (Genre)
-            genreCityName={selectedKpiGenreCity}
-            topGenreInCity={genreKpisForCity.topGenreInCity}
-            topGenreInCityVal={genreKpisForCity.topGenreInCityVal}
-            leastGenreInCity={genreKpisForCity.leastGenreInCity}
-            leastGenreInCityVal={genreKpisForCity.leastGenreInCityVal}
-            indieEpicenter={indieEpicenter}
-            koploEpicenter={koploEpicenter}
+            genreMode={genreMode}
             
             // Perspective 3 (Aksesibilitas)
             avgPopJakarta={rq3Stats?.jakarta.avgPopularity ?? 0}
@@ -838,52 +833,27 @@ export default function HomeOrganism() {
             )}
 
             {activePerspective === "genre" && (
-              <>
-                {/* Left: City Dropdown for KPI Bar */}
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold text-sky-400 tracking-wider uppercase">Pilih Kota (KPI)</span>
-                  <Dropdown
-                    options={genreCityOptions}
-                    value={selectedKpiGenreCity}
-                    onChange={setSelectedKpiGenreCity}
-                    className="w-44"
-                  />
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Metode Analisis</span>
+                <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
+                  {[
+                    { label: "Genre Utama", id: "primary" },
+                    { label: "Tag Genre (Tags)", id: "tags" }
+                  ].map((mode) => (
+                    <button
+                      key={mode.id}
+                      onClick={() => setGenreMode(mode.id as any)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                        genreMode === mode.id
+                          ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
+                          : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                      }`}
+                    >
+                      {mode.label}
+                    </button>
+                  ))}
                 </div>
-
-                {/* Center: Genre Filter Dropdown */}
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Filter Genre Peta</span>
-                  <Dropdown
-                    options={genreOptions}
-                    value={selectedGenre}
-                    onChange={setSelectedGenre}
-                    className="w-44"
-                  />
-                </div>
-
-                {/* Right: Toggle tags vs primary */}
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Metode Analisis</span>
-                  <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
-                    {[
-                      { label: "Genre Utama", id: "primary" },
-                      { label: "Tag Genre (Tags)", id: "tags" }
-                    ].map((mode) => (
-                      <button
-                        key={mode.id}
-                        onClick={() => setGenreMode(mode.id as any)}
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                          genreMode === mode.id
-                            ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
-                            : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
-                        }`}
-                      >
-                        {mode.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
+              </div>
             )}
 
             {activePerspective === "aksesibilitas" && (

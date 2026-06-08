@@ -937,29 +937,6 @@ export default function InteractiveMap({
         )}
       </AnimatePresence>
 
-      {/* Floating glassmorphic map legend */}
-      {activePerspective === "genre" && genreMode === "primary" && (
-        <div 
-          className="absolute bottom-4 left-4 z-[1000] p-4 rounded-xl shadow-2xl max-w-sm pointer-events-auto animate-fade-in"
-          style={{
-            background: "rgba(18, 18, 18, 0.85)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(255, 255, 255, 0.15)"
-          }}
-        >
-          <div className="text-xs font-bold text-white mb-2.5 uppercase tracking-wider">Legenda Genre Utama</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-[10px]">
-            {GENRE_GROUPS.map((group) => (
-              <div key={group.name} className="flex items-center gap-2 text-white/80">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/10" style={{ backgroundColor: group.color }} />
-                <span className="truncate text-white/95 font-medium" title={group.name}>{group.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       <style jsx global>{`
         .leaflet-interactive {
           transition: stroke 0.2s cubic-bezier(0.4, 0, 0.2, 1), 

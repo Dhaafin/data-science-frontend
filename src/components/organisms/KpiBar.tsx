@@ -5,14 +5,13 @@ import {
   UsersThree,
   ChartLineUp,
   MapPin,
-  MusicNotes,
   Buildings,
   Fire,
   Globe,
-  TrendUp,
   Warning,
 } from "@phosphor-icons/react";
 import { KpiCard } from "@/components/molecules/KpiCard";
+import { GENRE_GROUPS } from "@/components/organisms/InteractiveMap";
 
 export type ResearchPerspective = "sebaran" | "genre" | "aksesibilitas";
 
@@ -32,15 +31,9 @@ interface KpiBarProps {
     leastPopularName: string;
     leastPopularVal: number;
   };
-  
-  // Perspective 2 (Genre) Metrics
-  genreCityName: string;
-  topGenreInCity: string;
-  topGenreInCityVal: number;
-  leastGenreInCity: string;
-  leastGenreInCityVal: number;
-  indieEpicenter: string;
-  koploEpicenter: string;
+
+  // Perspective 2 (Genre) — only mode needed for legend display
+  genreMode?: 'primary' | 'tags';
   
   // Perspective 3 (Aksesibilitas) Metrics
   avgPopJakarta: number;
@@ -56,15 +49,9 @@ export function KpiBar({
   // Perspective 1
   sebaranGranularity,
   sebaranKpis,
-  
+
   // Perspective 2
-  genreCityName,
-  topGenreInCity,
-  topGenreInCityVal,
-  leastGenreInCity,
-  leastGenreInCityVal,
-  indieEpicenter,
-  koploEpicenter,
+  genreMode = "primary",
   
   // Perspective 3
   avgPopJakarta,
@@ -114,7 +101,7 @@ export function KpiBar({
         </button>
       </div>
 
-      {/* Dynamic KPI Cards with smooth cross-fade */}
+      {/* Dynamic KPI / Legend area with smooth cross-fade */}
       <div className="flex flex-1 gap-4 overflow-hidden relative flex-wrap md:flex-nowrap">
         <AnimatePresence mode="wait">
           {activePerspective === "sebaran" && (
@@ -183,29 +170,47 @@ export function KpiBar({
 
           {activePerspective === "genre" && (
             <motion.div
-              key="genre-kpis"
+              key="genre-legend"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.15 }}
-              className="flex flex-1 gap-4 w-full"
+              className="flex flex-1 w-full items-center"
             >
-              <KpiCard
-                icon={MusicNotes}
-                label={`Genre Terbanyak (${genreCityName})`}
-                value={topGenreInCityVal}
-                suffix=" Musisi"
-                description={topGenreInCity}
-              />
-              <KpiCard
-                icon={UsersThree}
-                label={`Genre Tersedikit (${genreCityName})`}
-                value={leastGenreInCityVal}
-                suffix=" Musisi"
-                description={leastGenreInCity}
-              />
-              <KpiCard icon={Buildings} label="Episentrum Indie" value={0} formatter={() => indieEpicenter} />
-              <KpiCard icon={Fire} label="Episentrum Koplo" value={0} formatter={() => koploEpicenter} />
+              {genreMode === "primary" ? (
+                <div className="flex flex-col gap-2 w-full">
+                  <span className="text-[10px] font-bold text-sky-400 tracking-wider uppercase">Legenda Warna Peta — Genre Utama</span>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-1.5">
+                    {GENRE_GROUPS.map((group) => (
+                      <div key={group.name} className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/10"
+                          style={{ backgroundColor: group.color }}
+                        />
+                        <span className="text-[11px] text-white/75 font-medium truncate" title={group.name}>
+                          {group.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-bold text-sky-400 tracking-wider uppercase">Mode: Tag Genre</span>
+                  <div
+                    className="h-3 w-64 rounded-full overflow-hidden flex"
+                    style={{
+                      background: "linear-gradient(to right, rgb(59,130,246), rgb(20,184,166), rgb(239,68,68))",
+                    }}
+                  />
+                  <div className="flex justify-between w-64 text-[9px] text-white/50 font-medium">
+                    <span>Sedikit Musisi</span>
+                    <span>Rata-Rata</span>
+                    <span>Banyak Musisi</span>
+                  </div>
+                  <span className="text-[10px] text-white/40 mt-1">Warna gelembung menunjukkan kepadatan musisi relatif per kota.</span>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -229,4 +234,3 @@ export function KpiBar({
     </div>
   );
 }
-
