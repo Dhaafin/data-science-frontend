@@ -21,10 +21,17 @@ interface KpiBarProps {
   onPerspectiveChange: (perspective: ResearchPerspective) => void;
   
   // Perspective 1 (Sebaran) Metrics
-  totalArtists: number;
-  javaArtistPct: number;
-  javaFollowersPct: number;
-  mostDenseCity: string;
+  sebaranGranularity: 'pulau' | 'provinsi' | 'kota';
+  sebaranKpis: {
+    mostDenseName: string;
+    mostDenseVal: number;
+    mostPopularName: string;
+    mostPopularVal: number;
+    leastDenseName: string;
+    leastDenseVal: number;
+    leastPopularName: string;
+    leastPopularVal: number;
+  };
   
   // Perspective 2 (Genre) Metrics
   topGenre: string;
@@ -44,10 +51,8 @@ export function KpiBar({
   onPerspectiveChange,
   
   // Perspective 1
-  totalArtists,
-  javaArtistPct,
-  javaFollowersPct,
-  mostDenseCity,
+  sebaranGranularity,
+  sebaranKpis,
   
   // Perspective 2
   topGenre,
@@ -113,12 +118,60 @@ export function KpiBar({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.15 }}
-              className="flex flex-1 gap-4 w-full"
+              className="flex flex-1 gap-4 w-full animate-perspective"
             >
-              <KpiCard icon={UsersThree} label="Total Musisi" value={totalArtists} />
-              <KpiCard icon={Globe} label="Konsentrasi Jawa" value={javaArtistPct} suffix="%" />
-              <KpiCard icon={TrendUp} label="Pangsa Followers Jawa" value={javaFollowersPct} suffix="%" />
-              <KpiCard icon={Fire} label="Kota Terpadat" value={0} formatter={() => mostDenseCity} />
+              <KpiCard
+                icon={UsersThree}
+                label={
+                  sebaranGranularity === "pulau"
+                    ? "Pulau Terpadat"
+                    : sebaranGranularity === "provinsi"
+                    ? "Provinsi Terbanyak Musisi"
+                    : "Kota Terbanyak Musisi"
+                }
+                value={sebaranKpis.mostDenseVal}
+                suffix=" Musisi"
+                description={sebaranKpis.mostDenseName}
+              />
+              <KpiCard
+                icon={Fire}
+                label={
+                  sebaranGranularity === "pulau"
+                    ? "Pulau Terpopuler"
+                    : sebaranGranularity === "provinsi"
+                    ? "Provinsi Terpopuler"
+                    : "Kota Terpopuler"
+                }
+                value={sebaranKpis.mostPopularVal}
+                suffix=" Pop"
+                description={sebaranKpis.mostPopularName}
+              />
+              <KpiCard
+                icon={MapPin}
+                label={
+                  sebaranGranularity === "pulau"
+                    ? "Pulau Tersepi"
+                    : sebaranGranularity === "provinsi"
+                    ? "Provinsi Tersedikit Musisi"
+                    : "Kota Tersedikit Musisi"
+                }
+                value={sebaranKpis.leastDenseVal}
+                suffix=" Musisi"
+                description={sebaranKpis.leastDenseName}
+              />
+              <KpiCard
+                icon={Warning}
+                label={
+                  sebaranGranularity === "pulau"
+                    ? "Pulau Terendah Popularitas"
+                    : sebaranGranularity === "provinsi"
+                    ? "Provinsi Terendah Popularitas"
+                    : "Kota Terendah Popularitas"
+                }
+                value={sebaranKpis.leastPopularVal}
+                suffix=" Pop"
+                description={sebaranKpis.leastPopularName}
+              />
             </motion.div>
           )}
 

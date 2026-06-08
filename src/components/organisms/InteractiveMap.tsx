@@ -34,6 +34,17 @@ export interface CityAggregate {
   bandCount: number;
 }
 
+export interface ProvinceAggregate {
+  province: string;
+  count: number;
+  totalPopularity: number;
+  avgPopularity: number;
+  totalFollowers: number;
+  topArtists: ArtistData[];
+  soloCount: number;
+  bandCount: number;
+}
+
 // Fallback capitals coordinates for cities without pre-configured centroids
 const provinceCapitals: Record<string, string> = {
   "DKI Jakarta": "Jakarta",
@@ -127,7 +138,6 @@ function getDivergingColor(value: number, avg: number, maxDiv: number) {
     const mappedT = t + 1; // scale -1..0 to 0..1
     r = Math.round(c1[0] + (c2[0] - c1[0]) * mappedT);
     g = Math.round(c1[1] + (c2[1] - c1[1]) * mappedT);
-    r = Math.round(c1[0] + (c2[0] - c1[0]) * mappedT);
     b = Math.round(c1[2] + (c2[2] - c1[2]) * mappedT);
   } else {
     const mappedT = t; // scale 0..1 to 0..1
@@ -148,6 +158,7 @@ export interface MapProps {
   activePerspective?: string;
   onArtistClick?: (artist: ArtistData) => void;
   onCityClick?: (city: CityAggregate) => void;
+  onProvinceClick?: (province: ProvinceAggregate) => void;
   onDataLoaded?: (data: CityAggregate[]) => void;
   onGenresLoaded?: (genres: string[]) => void;
 }
@@ -161,6 +172,7 @@ export default function InteractiveMap({
   activePerspective = "sebaran",
   onArtistClick,
   onCityClick,
+  onProvinceClick,
   onDataLoaded,
   onGenresLoaded,
 }: MapProps) {
@@ -168,6 +180,7 @@ export default function InteractiveMap({
   const [rawArtists, setRawArtists] = useState<any[]>([]);
   const [hoveredCity, setHoveredCity] = useState<CityAggregate | null>(null);
   const [hoveredIsland, setHoveredIsland] = useState<{ name: string; count: number; totalFollowers: number } | null>(null);
+  const [hoveredProvince, setHoveredProvince] = useState<ProvinceAggregate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch GeoJSON and raw data once on mount
@@ -304,6 +317,79 @@ export default function InteractiveMap({
         topArtistPopularity,
         soloCount: c.soloCount,
         bandCount: c.bandCount,
+      };
+  }, [rawArtists, selectedGenre, selectedFormat]);
+
+  // Compute province aggregates
+  const provinceData = useMemo<ProvinceAggregate[]>(() => {
+    const filtered = rawArtists.filter((row) => {
+      // Genre filter
+      if (selectedGenre !== "Semua") {
+        if (row.primary_genre?.toLowerCase() !== selectedGenre.toLowerCase()) {
+          return false;
+        }
+      }
+      // Format filter
+      if (selectedFormat !== "Semua") {
+        const type = row.artist_type === "Group" ? "Band" : "Soloist";
+        if (type !== selectedFormat) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    const provMap = new Map<string, Omit<ProvinceAggregate, "avgPopularity"> & {
+      genres: Map<string, number>;
+    }>();
+
+    filtered.forEach((row) => {
+      const prov = row.origin_province?.trim() || "";
+      if (!prov || prov.toLowerCase() === "unknown") return;
+
+      const existing = provMap.get(prov) || {
+        province: prov,
+        count: 0,
+        totalPopularity: 0,
+        totalFollowers: 0,
+        topArtists: [] as ArtistData[],
+        genres: new Map<string, number>(),
+        soloCount: 0,
+        bandCount: 0,
+      };
+
+      existing.count += 1;
+      existing.totalPopularity += row.popularity || 0;
+      existing.totalFollowers += row.followers || 0;
+
+      const artistData = mapDbToArtistData(row);
+      existing.topArtists.push(artistData);
+
+      const pg = row.primary_genre ? row.primary_genre.trim() : "";
+      if (pg) {
+        existing.genres.set(pg, (existing.genres.get(pg) || 0) + 1);
+      }
+
+      if (row.artist_type === "Group") {
+        existing.bandCount += 1;
+      } else {
+        existing.soloCount += 1;
+      }
+
+      provMap.set(prov, existing);
+    });
+
+    return Array.from(provMap.values()).map((p) => {
+      p.topArtists.sort((a, b) => b.popularity - a.popularity);
+      return {
+        province: p.province,
+        count: p.count,
+        totalPopularity: p.totalPopularity,
+        avgPopularity: p.count > 0 ? Math.round(p.totalPopularity / p.count) : 0,
+        totalFollowers: p.totalFollowers,
+        topArtists: p.topArtists,
+        soloCount: p.soloCount,
+        bandCount: p.bandCount,
       };
     });
   }, [rawArtists, selectedGenre, selectedFormat]);
@@ -489,6 +575,7 @@ export default function InteractiveMap({
         />
 
         <GeoJSON 
+          key={`${sebaranGranularity}-${selectedGenre}-${selectedFormat}-${activePerspective}`}
           data={geoJsonData}
           style={getProvinceStyle}
           onEachFeature={(feature, layer) => {
@@ -500,11 +587,39 @@ export default function InteractiveMap({
                   fillOpacity: 0.5,
                   color: "var(--color-accent-400)"
                 });
-                target.bringToFront();
+                if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                  target.bringToFront();
+                }
+                if (activePerspective === "sebaran" && sebaranGranularity === "provinsi") {
+                  const propName = feature.properties?.Propinsi || "";
+                  const matchedProv = provinceData.find(p => matchProvinceName(p.province, propName)) || {
+                    province: propName,
+                    count: 0,
+                    totalPopularity: 0,
+                    avgPopularity: 0,
+                    totalFollowers: 0,
+                    topArtists: [],
+                    soloCount: 0,
+                    bandCount: 0,
+                  };
+                  setHoveredProvince(matchedProv);
+                }
               },
               mouseout: (e) => {
                 const target = e.target;
                 target.setStyle(getProvinceStyle(feature));
+                if (activePerspective === "sebaran" && sebaranGranularity === "provinsi") {
+                  setHoveredProvince(null);
+                }
+              },
+              click: (e) => {
+                if (activePerspective === "sebaran" && sebaranGranularity === "provinsi") {
+                  const propName = feature.properties?.Propinsi || "";
+                  const matchedProv = provinceData.find(p => matchProvinceName(p.province, propName));
+                  if (matchedProv && onProvinceClick) {
+                    onProvinceClick(matchedProv);
+                  }
+                }
               }
             });
           }}
@@ -670,6 +785,50 @@ export default function InteractiveMap({
                       : hoveredIsland.totalFollowers >= 1_000 
                         ? `${(hoveredIsland.totalFollowers / 1_000).toFixed(0)}K` 
                         : hoveredIsland.totalFollowers}
+                  </span>
+                  <span className="text-white/60 text-xs uppercase tracking-wider font-medium">Followers</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {hoveredProvince && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="absolute top-8 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none"
+          >
+            <div 
+              className="px-6 py-3 flex flex-col items-center rounded-xl shadow-2xl"
+              style={{
+                background: "rgba(18, 18, 18, 0.85)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(255, 255, 255, 0.15)"
+              }}
+            >
+              <span className="font-bold text-white text-lg tracking-wide">{hoveredProvince.province}</span>
+              <div className="flex items-center gap-4 mt-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[#34d399] text-sm font-bold">{hoveredProvince.count}</span>
+                  <span className="text-white/60 text-xs uppercase tracking-wider font-medium">Musisi</span>
+                </div>
+                <div className="w-[1px] h-3 bg-white/20" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-teal-400 text-sm font-bold">{hoveredProvince.avgPopularity}</span>
+                  <span className="text-white/60 text-xs uppercase tracking-wider font-medium">Avg Pop</span>
+                </div>
+                <div className="w-[1px] h-3 bg-white/20" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sky-400 text-sm font-bold">
+                    {hoveredProvince.totalFollowers >= 1_000_000 
+                      ? `${(hoveredProvince.totalFollowers / 1_000_000).toFixed(1)}M` 
+                      : hoveredProvince.totalFollowers >= 1_000 
+                        ? `${(hoveredProvince.totalFollowers / 1_000).toFixed(0)}K` 
+                        : hoveredProvince.totalFollowers}
                   </span>
                   <span className="text-white/60 text-xs uppercase tracking-wider font-medium">Followers</span>
                 </div>

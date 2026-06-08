@@ -15,7 +15,7 @@ import {
 } from "@/components/organisms";
 import { ResearchPerspective } from "@/components/organisms/KpiBar";
 import type { ArtistData } from "@/components/organisms";
-import type { CityAggregate } from "@/components/organisms/InteractiveMap";
+import type { CityAggregate, ProvinceAggregate } from "@/components/organisms/InteractiveMap";
 import { Text, Badge, Divider, AnimatedCounter, GlassCard, Skeleton } from "@/components/atoms";
 import { Dropdown } from "@/components/molecules";
 
@@ -39,6 +39,7 @@ const JAVA_PROVINCES = [
 export default function HomeOrganism() {
   const [selectedArtist, setSelectedArtist] = useState<ArtistData | null>(null);
   const [selectedCity, setSelectedCity] = useState<CityAggregate | null>(null);
+  const [selectedProvince, setSelectedProvince] = useState<ProvinceAggregate | null>(null);
   const [visibleCount, setVisibleCount] = useState(10);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [activePerspective, setActivePerspective] = useState<ResearchPerspective>("sebaran");
@@ -86,13 +87,21 @@ export default function HomeOrganism() {
 
   const handleCitySelect = (city: CityAggregate | null) => {
     setSelectedCity(city);
+    setSelectedProvince(null); // Clear province drawer if open
+    setVisibleCount(10);
+    setShowBackToTop(false);
+  };
+
+  const handleProvinceSelect = (prov: ProvinceAggregate | null) => {
+    setSelectedProvince(prov);
+    setSelectedCity(null); // Clear city drawer if open
     setVisibleCount(10);
     setShowBackToTop(false);
   };
 
   // Bind scroll handler to show/hide "Back to Top" button
   useEffect(() => {
-    if (!selectedCity) return;
+    if (!selectedCity && !selectedProvince) return;
 
     let handleScroll: () => void;
     
@@ -115,11 +124,12 @@ export default function HomeOrganism() {
         container.removeEventListener("scroll", handleScroll);
       }
     };
-  }, [selectedCity]);
+  }, [selectedCity, selectedProvince]);
 
   // IntersectionObserver to auto-trigger loading more artists as scroll approaches sentinel
   useEffect(() => {
-    if (!selectedCity) return;
+    if (!selectedCity && !selectedProvince) return;
+    const totalLength = selectedCity ? selectedCity.topArtists.length : selectedProvince?.topArtists.length || 0;
 
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
@@ -128,7 +138,7 @@ export default function HomeOrganism() {
       (entries) => {
         const target = entries[0];
         if (target.isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + 10, selectedCity.topArtists.length));
+          setVisibleCount((prev) => Math.min(prev + 10, totalLength));
         }
       },
       {
@@ -144,7 +154,7 @@ export default function HomeOrganism() {
         observerRef.current.disconnect();
       }
     };
-  }, [selectedCity, visibleCount]);
+  }, [selectedCity, selectedProvince, visibleCount]);
 
   const [kpiStats, setKpiStats] = useState<{
     totalArtists: number;
@@ -233,6 +243,155 @@ export default function HomeOrganism() {
       totalFollowers,
     };
   }, [artists]);
+
+  // Compute dynamic Sebaran KPIs based on selected scale granularity and filters
+  const sebaranKpis = useMemo(() => {
+    const filtered = artists.filter((art) => {
+      if (selectedGenre !== "Semua") {
+        if (art.primaryGenre?.toLowerCase() !== selectedGenre.toLowerCase()) {
+          return false;
+        }
+      }
+      if (selectedFormat !== "Semua") {
+        const type = art.artistType === "Group" ? "Band" : "Soloist";
+        if (type !== selectedFormat) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    const getIslandForProvince = (province: string): string => {
+      const p = province.toLowerCase().trim();
+      if (p.includes("jakarta") || p.includes("banten") || p.includes("jawa") || p.includes("yogyakarta")) return "Jawa";
+      if (p.includes("sumatera") || p.includes("aceh") || p.includes("riau") || p.includes("jambi") || p.includes("bengkulu") || p.includes("lampung") || p.includes("bangka")) return "Sumatera";
+      if (p.includes("sulawesi") || p.includes("gorontalo")) return "Sulawesi";
+      if (p.includes("bali") || p.includes("nusa tenggara") || p.includes("ntb") || p.includes("ntt")) return "Nusa Tenggara";
+      if (p.includes("kalimantan")) return "Kalimantan";
+      if (p.includes("maluku")) return "Maluku";
+      if (p.includes("papua")) return "Papua";
+      return "Lainnya";
+    };
+
+    if (sebaranGranularity === "pulau") {
+      const islandMap = new Map<string, { count: number; totalPop: number }>();
+      filtered.forEach((art) => {
+        const island = getIslandForProvince(art.originProvince);
+        if (island === "Lainnya") return;
+        const current = islandMap.get(island) || { count: 0, totalPop: 0 };
+        current.count += 1;
+        current.totalPop += art.popularity || 0;
+        islandMap.set(island, current);
+      });
+
+      const list = Array.from(islandMap.entries()).map(([name, data]) => ({
+        name,
+        count: data.count,
+        avgPop: data.count > 0 ? Math.round(data.totalPop / data.count) : 0,
+      }));
+
+      if (list.length === 0) {
+        return {
+          mostDenseName: "N/A", mostDenseVal: 0,
+          mostPopularName: "N/A", mostPopularVal: 0,
+          leastDenseName: "N/A", leastDenseVal: 0,
+          leastPopularName: "N/A", leastPopularVal: 0,
+        };
+      }
+      const sortedByCount = [...list].sort((a, b) => b.count - a.count);
+      const sortedByPop = [...list].sort((a, b) => b.avgPop - a.avgPop);
+
+      return {
+        mostDenseName: sortedByCount[0].name,
+        mostDenseVal: sortedByCount[0].count,
+        mostPopularName: sortedByPop[0].name,
+        mostPopularVal: sortedByPop[0].avgPop,
+        leastDenseName: sortedByCount[sortedByCount.length - 1].name,
+        leastDenseVal: sortedByCount[sortedByCount.length - 1].count,
+        leastPopularName: sortedByPop[sortedByPop.length - 1].name,
+        leastPopularVal: sortedByPop[sortedByPop.length - 1].avgPop,
+      };
+    }
+
+    if (sebaranGranularity === "provinsi") {
+      const provinceMap = new Map<string, { count: number; totalPop: number }>();
+      filtered.forEach((art) => {
+        const prov = art.originProvince?.trim() || "";
+        if (!prov || prov.toLowerCase() === "unknown") return;
+        const current = provinceMap.get(prov) || { count: 0, totalPop: 0 };
+        current.count += 1;
+        current.totalPop += art.popularity || 0;
+        provinceMap.set(prov, current);
+      });
+
+      const list = Array.from(provinceMap.entries()).map(([name, data]) => ({
+        name,
+        count: data.count,
+        avgPop: data.count > 0 ? Math.round(data.totalPop / data.count) : 0,
+      }));
+
+      if (list.length === 0) {
+        return {
+          mostDenseName: "N/A", mostDenseVal: 0,
+          mostPopularName: "N/A", mostPopularVal: 0,
+          leastDenseName: "N/A", leastDenseVal: 0,
+          leastPopularName: "N/A", leastPopularVal: 0,
+        };
+      }
+      const sortedByCount = [...list].sort((a, b) => b.count - a.count);
+      const sortedByPop = [...list].sort((a, b) => b.avgPop - a.avgPop);
+
+      return {
+        mostDenseName: sortedByCount[0].name,
+        mostDenseVal: sortedByCount[0].count,
+        mostPopularName: sortedByPop[0].name,
+        mostPopularVal: sortedByPop[0].avgPop,
+        leastDenseName: sortedByCount[sortedByCount.length - 1].name,
+        leastDenseVal: sortedByCount[sortedByCount.length - 1].count,
+        leastPopularName: sortedByPop[sortedByPop.length - 1].name,
+        leastPopularVal: sortedByPop[sortedByPop.length - 1].avgPop,
+      };
+    }
+
+    // default: "kota"
+    const cityMap = new Map<string, { count: number; totalPop: number }>();
+    filtered.forEach((art) => {
+      const city = normalizeCity(art.originCity);
+      if (!city || city.toLowerCase() === "unknown") return;
+      const current = cityMap.get(city) || { count: 0, totalPop: 0 };
+      current.count += 1;
+      current.totalPop += art.popularity || 0;
+      cityMap.set(city, current);
+    });
+
+    const list = Array.from(cityMap.entries()).map(([name, data]) => ({
+      name,
+      count: data.count,
+      avgPop: data.count > 0 ? Math.round(data.totalPop / data.count) : 0,
+    }));
+
+    if (list.length === 0) {
+      return {
+        mostDenseName: "N/A", mostDenseVal: 0,
+        mostPopularName: "N/A", mostPopularVal: 0,
+        leastDenseName: "N/A", leastDenseVal: 0,
+        leastPopularName: "N/A", leastPopularVal: 0,
+      };
+    }
+    const sortedByCount = [...list].sort((a, b) => b.count - a.count);
+    const sortedByPop = [...list].sort((a, b) => b.avgPop - a.avgPop);
+
+    return {
+      mostDenseName: sortedByCount[0].name,
+      mostDenseVal: sortedByCount[0].count,
+      mostPopularName: sortedByPop[0].name,
+      mostPopularVal: sortedByPop[0].avgPop,
+      leastDenseName: sortedByCount[sortedByCount.length - 1].name,
+      leastDenseVal: sortedByCount[sortedByCount.length - 1].count,
+      leastPopularName: sortedByPop[sortedByPop.length - 1].name,
+      leastPopularVal: sortedByPop[sortedByPop.length - 1].avgPop,
+    };
+  }, [artists, selectedGenre, selectedFormat, sebaranGranularity]);
 
   // Island Stats calculation for below-the-fold display
   const islandStats = useMemo(() => {
@@ -524,10 +683,8 @@ export default function HomeOrganism() {
             onPerspectiveChange={setActivePerspective}
             
             // Perspective 1 (Sebaran)
-            totalArtists={rq1Stats?.totalArtists ?? 0}
-            javaArtistPct={rq1Stats?.javaArtistPct ?? 0}
-            javaFollowersPct={rq1Stats?.javaFollowersPct ?? 0}
-            mostDenseCity={rq1Stats?.topCities[0]?.name ?? "Jakarta"}
+            sebaranGranularity={sebaranGranularity}
+            sebaranKpis={sebaranKpis}
             
             // Perspective 2 (Genre)
             topGenre={kpiStats?.topGenre ?? "Pop"}
@@ -573,7 +730,7 @@ export default function HomeOrganism() {
                   </div>
                 </div>
 
-                {/* Center & Right: Format & Sizing selectors */}
+                {/* Center & Right: Format selector */}
                 <div className="flex flex-wrap items-center gap-6">
                   {/* Format Selector */}
                   <div className="flex items-center gap-3">
@@ -594,29 +751,6 @@ export default function HomeOrganism() {
                           }`}
                         >
                           {fmt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Sizing Selector */}
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase">Ukuran Gelembung</span>
-                    <div className="flex p-0.5 bg-black/40 rounded-lg border border-white/5">
-                      {[
-                        { label: "Kepadatan Artis", value: "count" },
-                        { label: "Reach Followers", value: "followers" }
-                      ].map((metric) => (
-                        <button
-                          key={metric.value}
-                          onClick={() => setRadiusMetric(metric.value as 'count' | 'followers')}
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                            radiusMetric === metric.value
-                              ? "bg-teal-500/10 text-teal-400 border border-teal-500/25"
-                              : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
-                          }`}
-                        >
-                          {metric.label}
                         </button>
                       ))}
                     </div>
@@ -688,6 +822,7 @@ export default function HomeOrganism() {
             activePerspective={activePerspective}
             onArtistClick={setSelectedArtist} 
             onCityClick={handleCitySelect} 
+            onProvinceClick={handleProvinceSelect}
             onDataLoaded={setCityData}
             onGenresLoaded={setAvailableGenres}
           />
@@ -1188,6 +1323,155 @@ export default function HomeOrganism() {
                     className="w-full py-2.5 rounded-lg border border-(--color-border-default) bg-(--color-bg-surface)/30 text-xs font-semibold text-(--color-text-secondary) hover:text-(--color-text-primary) hover:border-(--color-accent-500)/50 hover:bg-(--color-bg-surface)/50 transition-all cursor-pointer text-center shadow-sm"
                   >
                     Tampilkan Lebih Banyak ({selectedCity.topArtists.length - visibleCount} Musisi Lainnya)
+                  </button>
+                  
+                  {/* Invisible scroll sentinel */}
+                  <div ref={sentinelRef} className="h-2 w-full flex items-center justify-center opacity-60">
+                    <CircleNotch size={14} className="animate-spin text-(--color-accent-500)" />
+                    <span className="ml-1.5 text-[10px] text-(--color-text-muted)">Menggulir untuk memuat lebih banyak...</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Back to top fixed button inside viewport */}
+              <AnimatePresence>
+                {showBackToTop && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                    onClick={() => {
+                      const container = document.getElementById("drawer-scroll-container");
+                      if (container) {
+                        container.scrollTo({ top: 0, behavior: "smooth" });
+                      }
+                    }}
+                    className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-(--color-accent-500) text-black shadow-lg shadow-(--color-accent-glow) hover:bg-(--color-accent-400) hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                    title="Kembali ke Atas"
+                  >
+                    <ArrowUp size={16} weight="bold" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        )}
+      </Drawer>
+
+      {/* Slide-over Drawer — globally available for province detail analysis */}
+      <Drawer
+        isOpen={!!selectedProvince}
+        onClose={() => handleProvinceSelect(null)}
+        width="w-[480px]"
+        blurBackdrop={true}
+        badge={
+          <Badge
+            color="accent"
+            className="uppercase tracking-wider text-[10px] font-bold"
+          >
+            Provinsi Analisis
+          </Badge>
+        }
+        title={selectedProvince?.province}
+        subtitle="Rangkuman data spasial musisi di tingkat provinsi"
+      >
+        {selectedProvince && (
+          <div className="flex flex-col gap-6">
+            {/* Quick Metrics Grid */}
+            <div className="grid grid-cols-3 gap-3 bg-(--color-bg-surface)/20 border border-(--color-border-default) rounded-xl p-4">
+              <div className="flex flex-col gap-1">
+                <Text variant="caption" color="secondary">Artis</Text>
+                <AnimatedCounter
+                  value={selectedProvince.count}
+                  className="text-lg font-bold text-white tracking-tight"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Text variant="caption" color="secondary">Avg Pop</Text>
+                <AnimatedCounter
+                  value={selectedProvince.avgPopularity}
+                  className="text-lg font-bold text-(--color-accent-500) tracking-tight"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Text variant="caption" color="secondary">Followers</Text>
+                <AnimatedCounter
+                  value={selectedProvince.totalFollowers}
+                  formatter={formatFollowers}
+                  className="text-lg font-bold text-white tracking-tight"
+                />
+              </div>
+            </div>
+
+            {/* Format / Type Ratio Badge block */}
+            {(() => {
+              const provCollaborationIndex = selectedProvince.count ? Math.round((selectedProvince.bandCount / selectedProvince.count) * 100) : 0;
+              let provArchetype = "Evolving Music Scene";
+              if (provCollaborationIndex >= 60) provArchetype = "Band Collective Dominance";
+              else if (provCollaborationIndex >= 40) provArchetype = "Balanced Format Mix";
+              else provArchetype = "Soloist Heavy Market";
+
+              return (
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-(--color-border-default) bg-(--color-bg-surface)/10">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-(--color-text-secondary) uppercase tracking-wider font-semibold">Format Archetype</span>
+                    <span className="text-sm font-bold text-white mt-0.5">{provArchetype}</span>
+                  </div>
+                  <Badge color="accent" className="font-semibold text-xs py-1">
+                    {provCollaborationIndex}% Band Format
+                  </Badge>
+                </div>
+              );
+            })()}
+
+            <Divider spacing="sm" />
+
+            {/* Roster list */}
+            <div className="flex flex-col gap-3 relative pb-10">
+              <Text variant="label" className="font-semibold text-white/95">
+                Musisi Terpopuler ({selectedProvince.topArtists.length})
+              </Text>
+              
+              <div className="flex flex-col gap-2">
+                {selectedProvince.topArtists.slice(0, visibleCount).map((art) => (
+                  <button
+                    key={art.name}
+                    onClick={() => {
+                      setSelectedArtist(art);
+                      handleProvinceSelect(null); 
+                    }}
+                    className="flex items-center justify-between p-3 rounded-lg bg-(--color-bg-surface)/20 border border-(--color-border-default) hover:border-(--color-accent-500)/30 hover:bg-(--color-accent-500)/5 transition-all text-left group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img
+                       src={art.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&q=80"}
+                        alt={art.name}
+                        className="size-10 rounded-full border border-white/10 object-cover group-hover:border-(--color-accent-500)/40 transition-colors"
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-white group-hover:text-(--color-accent-400) transition-colors truncate">
+                          {art.name}
+                        </span>
+                        <span className="text-xs text-(--color-text-secondary) truncate">
+                          {art.genres.slice(0, 2).join(", ")}
+                        </span>
+                      </div>
+                    </div>
+                    <Badge color="accent" className="font-medium text-[10px]">
+                      Pop {art.popularity}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
+
+              {/* Show More & Infinite Scroll triggers */}
+              {visibleCount < selectedProvince.topArtists.length && (
+                <div className="mt-2 flex flex-col items-center gap-3 w-full">
+                  <button
+                    onClick={() => setVisibleCount((prev) => Math.min(prev + 10, selectedProvince.topArtists.length))}
+                    className="w-full py-2.5 rounded-lg border border-(--color-border-default) bg-(--color-bg-surface)/30 text-xs font-semibold text-(--color-text-secondary) hover:text-(--color-text-primary) hover:border-(--color-accent-500)/50 hover:bg-(--color-bg-surface)/50 transition-all cursor-pointer text-center shadow-sm"
+                  >
+                    Tampilkan Lebih Banyak ({selectedProvince.topArtists.length - visibleCount} Musisi Lainnya)
                   </button>
                   
                   {/* Invisible scroll sentinel */}

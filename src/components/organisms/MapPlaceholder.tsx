@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { fadeUp } from "@/lib/motion";
 import { Spinner } from "@phosphor-icons/react";
 import type { ArtistData } from "@/components/organisms/ArtistDrawer";
-import type { CityAggregate } from "./InteractiveMap";
+import type { CityAggregate, ProvinceAggregate } from "./InteractiveMap";
 
 /**
  * MapPlaceholder (Now Interactive Map Wrapper)
@@ -39,6 +39,7 @@ interface MapWrapperProps {
   activePerspective?: string;
   onArtistClick: (artist: ArtistData) => void;
   onCityClick?: (city: CityAggregate) => void;
+  onProvinceClick?: (province: ProvinceAggregate) => void;
   onDataLoaded?: (data: CityAggregate[]) => void;
   onGenresLoaded?: (genres: string[]) => void;
 }
@@ -52,6 +53,7 @@ export function MapPlaceholder({
   activePerspective = "sebaran",
   onArtistClick,
   onCityClick,
+  onProvinceClick,
   onDataLoaded,
   onGenresLoaded,
 }: MapWrapperProps) {
@@ -84,6 +86,7 @@ export function MapPlaceholder({
         activePerspective={activePerspective}
         onArtistClick={onArtistClick} 
         onCityClick={onCityClick} 
+        onProvinceClick={onProvinceClick}
         onDataLoaded={onDataLoaded}
         onGenresLoaded={onGenresLoaded}
       />

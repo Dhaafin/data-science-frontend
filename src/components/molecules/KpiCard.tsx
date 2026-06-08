@@ -26,6 +26,8 @@ interface KpiCardProps {
   suffix?: string;
   /** Custom formatter */
   formatter?: (n: number) => string;
+  /** Optional subtitle or description text below the counter */
+  description?: string;
 }
 
 export function KpiCard({
@@ -35,6 +37,7 @@ export function KpiCard({
   decimals = 0,
   suffix,
   formatter,
+  description,
 }: KpiCardProps) {
   return (
     <GlassCard
@@ -60,6 +63,11 @@ export function KpiCard({
         formatter={formatter}
         className="text-title text-(--color-text-primary)"
       />
+      {description && (
+        <Text as="span" variant="caption" color="secondary" className="mt-0.5 truncate font-medium block">
+          {description}
+        </Text>
+      )}
     </GlassCard>
   );
 }
