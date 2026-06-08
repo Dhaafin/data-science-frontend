@@ -30,6 +30,54 @@ const JAVA_PROVINCES = [
   "banten",
 ];
 
+const SPOTLIGHT_GENRES = [
+  {
+    name: "Mainstream Pop & Ballad",
+    displayName: "Mainstream Pop",
+    description: "Pop dengan melodi manis, ballad romantis, dan aransemen vokal yang mendominasi chart musik arus utama.",
+    color: "#3b82f6",
+    colorClass: "from-blue-500/20 to-blue-600/5 hover:border-blue-500/30",
+    glowClass: "shadow-blue-500/10 hover:shadow-blue-500/20",
+    badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  },
+  {
+    name: "Indie & Alternative",
+    displayName: "Indie & Alternative",
+    description: "Musik independen dengan eksplorasi genre lo-fi, shoegaze, alternative rock, hingga folk kontemplatif.",
+    color: "#10b981",
+    colorClass: "from-emerald-500/20 to-emerald-600/5 hover:border-emerald-500/30",
+    glowClass: "shadow-emerald-500/10 hover:shadow-emerald-500/20",
+    badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  },
+  {
+    name: "Dangdut & Koplo",
+    displayName: "Dangdut & Koplo",
+    description: "Revolusi ketukan kendang tradisional Indonesia yang berpadu dengan unsur disko modern, ska, dan funk.",
+    color: "#8b5cf6",
+    colorClass: "from-violet-500/20 to-violet-600/5 hover:border-violet-500/30",
+    glowClass: "shadow-violet-500/10 hover:shadow-violet-500/20",
+    badgeColor: "bg-violet-500/10 text-violet-400 border-violet-500/20",
+  },
+  {
+    name: "Classic & Heritage Rock",
+    displayName: "Classic & Heritage Rock",
+    description: "Distorsi gitar elektrik, riff perkasa, dan ketukan drum bertenaga tinggi yang diwarisi dari era keemasan rock.",
+    color: "#eab308",
+    colorClass: "from-yellow-500/20 to-yellow-600/5 hover:border-yellow-500/30",
+    glowClass: "shadow-yellow-500/10 hover:shadow-yellow-500/20",
+    badgeColor: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+  },
+  {
+    name: "Hip-Hop, Rap & Electronic Beats",
+    displayName: "Hip-Hop & Electronic",
+    description: "Ketukan beat digital, rima rap cepat, musik dansa elektronik, dan aransemen synthesizer urban modern.",
+    color: "#f97316",
+    colorClass: "from-orange-500/20 to-orange-600/5 hover:border-orange-500/30",
+    glowClass: "shadow-orange-500/10 hover:shadow-orange-500/20",
+    badgeColor: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  }
+];
+
 /**
  * Home — Selasar Suara unified vertical-scroll page
  *
@@ -591,6 +639,75 @@ export default function HomeOrganism() {
       .slice(0, 10); // Top 10 provinces
   }, [artists]);
 
+  // RQ2: Standalone Genre Spotlights (Independent of map filters)
+  const genreSpotlights = useMemo(() => {
+    if (artists.length === 0) return [];
+
+    // Precalculate total artists per normalized city to calculate dominance percentage
+    const totalArtistsPerCity = new Map<string, number>();
+    artists.forEach((art) => {
+      const city = normalizeCity(art.originCity);
+      if (!city || city.toLowerCase() === "unknown") return;
+      totalArtistsPerCity.set(city, (totalArtistsPerCity.get(city) || 0) + 1);
+    });
+
+    return SPOTLIGHT_GENRES.map((genreDef) => {
+      // Filter artists matching this specific genre group
+      const genreArtists = artists.filter(
+        (art) => getGenreGroupInfo(art.primaryGenre || "").name === genreDef.name
+      );
+
+      // Group these genre artists by city
+      const cityCounts = new Map<string, { count: number; artists: StickinessArtistEntry[] }>();
+      genreArtists.forEach((art) => {
+        const city = normalizeCity(art.originCity);
+        if (!city || city.toLowerCase() === "unknown") return;
+        
+        const current = cityCounts.get(city) || { count: 0, artists: [] };
+        current.count += 1;
+        current.artists.push(art);
+        cityCounts.set(city, current);
+      });
+
+      // Find the city with the maximum count
+      const sortedCities = Array.from(cityCounts.entries()).sort(
+        (a, b) => b[1].count - a[1].count
+      );
+
+      const topCityName = sortedCities[0] ? sortedCities[0][0] : "N/A";
+      const topCityData = sortedCities[0] ? sortedCities[0][1] : null;
+
+      const totalCityArtists = totalArtistsPerCity.get(topCityName) || 1;
+      const dominancePct = topCityData ? Math.round((topCityData.count / totalCityArtists) * 100) : 0;
+      const genreCount = topCityData ? topCityData.count : 0;
+
+      // Select top 3 representative artists by popularity (descending)
+      const repArtists = topCityData
+        ? [...topCityData.artists]
+            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+            .slice(0, 3)
+            .map((art) => ({
+              name: art.name,
+              profilePicture: art.profilePicture,
+              popularity: art.popularity || 0,
+              genres: art.genres || [],
+              primaryGenre: art.primaryGenre,
+              artistType: art.artistType,
+              originCity: art.originCity,
+              originProvince: art.originProvince
+            }))
+        : [];
+
+      return {
+        ...genreDef,
+        epicenter: topCityName,
+        genreCount,
+        dominancePct,
+        repArtists,
+      };
+    });
+  }, [artists]);
+
   // RQ2: Genre Hubs
   const rq2Stats = useMemo(() => {
     if (artists.length === 0 || !rq1Stats) return null;
@@ -688,115 +805,6 @@ export default function HomeOrganism() {
       javaRest: calcGroup(groups.javaRest),
       outsideJava: calcGroup(groups.outsideJava),
     };
-  }, [artists]);
-
-  const spotlightGenreStats = useMemo(() => {
-    if (artists.length === 0) return [];
-
-    const SPOTLIGHT_GENRES = [
-      {
-        key: "pop",
-        name: "Mainstream Pop & Ballad",
-        displayName: "Mainstream Pop",
-        color: "#3b82f6",
-        colorClass: "from-blue-500/20 to-blue-600/5 hover:border-blue-500/30",
-        glowClass: "shadow-blue-500/10 hover:shadow-blue-500/20 text-blue-400 border-blue-500/20 bg-blue-500/10",
-        description: "Pop dengan melodi manis, ballad romantis, dan aransemen vokal yang mendominasi chart musik arus utama.",
-      },
-      {
-        key: "indie",
-        name: "Indie & Alternative",
-        displayName: "Indie & Alternative",
-        color: "#10b981",
-        colorClass: "from-emerald-500/20 to-emerald-600/5 hover:border-emerald-500/30",
-        glowClass: "shadow-emerald-500/10 hover:shadow-emerald-500/20 text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
-        description: "Musik independen dengan eksplorasi genre lo-fi, shoegaze, alternative rock, hingga folk kontemplatif.",
-      },
-      {
-        key: "dangdut",
-        name: "Dangdut & Koplo",
-        displayName: "Dangdut & Koplo",
-        color: "#8b5cf6",
-        colorClass: "from-violet-500/20 to-violet-600/5 hover:border-violet-500/30",
-        glowClass: "shadow-violet-500/10 hover:shadow-violet-500/20 text-violet-400 border-violet-500/20 bg-violet-500/10",
-        description: "Revolusi ketukan kendang tradisional Indonesia yang berpadu dengan unsur disko modern, ska, dan funk.",
-      },
-      {
-        key: "rock",
-        name: "Classic & Heritage Rock",
-        displayName: "Classic & Heritage Rock",
-        color: "#eab308",
-        colorClass: "from-yellow-500/20 to-yellow-600/5 hover:border-yellow-500/30",
-        glowClass: "shadow-yellow-500/10 hover:shadow-yellow-500/20 text-yellow-400 border-yellow-500/20 bg-yellow-500/10",
-        description: "Distorsi gitar elektrik, riff perkasa, dan ketukan drum bertenaga tinggi yang diwarisi dari era keemasan rock.",
-      },
-      {
-        key: "electronic",
-        name: "Hip-Hop, Rap & Electronic Beats",
-        displayName: "Hip-Hop & Electronic",
-        color: "#f97316",
-        colorClass: "from-orange-500/20 to-orange-600/5 hover:border-orange-500/30",
-        glowClass: "shadow-orange-500/10 hover:shadow-orange-500/20 text-orange-400 border-orange-500/20 bg-orange-500/10",
-        description: "Ketukan beat digital, rima rap cepat, musik dansa elektronik, dan aransemen synthesizer urban modern.",
-      }
-    ];
-
-    // Precalculate total artists per normalized city
-    const totalArtistsPerCity = new Map<string, number>();
-    artists.forEach((art) => {
-      const c = normalizeCity(art.originCity);
-      if (c && c !== "Unknown") {
-        totalArtistsPerCity.set(c, (totalArtistsPerCity.get(c) || 0) + 1);
-      }
-    });
-
-    return SPOTLIGHT_GENRES.map((genre) => {
-      const genreArtists = artists.filter((art) => {
-        const groupInfo = getGenreGroupInfo(art.primaryGenre || "");
-        return groupInfo.name === genre.name;
-      });
-
-      // Group genre artists by normalized city
-      const cityCounts = new Map<string, { count: number; artistsList: any[] }>();
-      genreArtists.forEach((art) => {
-        const c = normalizeCity(art.originCity);
-        if (!c || c === "Unknown") return;
-        const current = cityCounts.get(c) || { count: 0, artistsList: [] };
-        current.count += 1;
-        current.artistsList.push(art);
-        cityCounts.set(c, current);
-      });
-
-      // Sort cities by genre artist count
-      const sortedCities = Array.from(cityCounts.entries()).sort((a, b) => b[1].count - a[1].count);
-
-      if (sortedCities.length === 0) {
-        return {
-          ...genre,
-          epicenterCity: "N/A",
-          genreCount: 0,
-          dominancePct: 0,
-          repArtists: [],
-        };
-      }
-
-      const [epicenterCity, cityData] = sortedCities[0];
-      const totalCityArtists = totalArtistsPerCity.get(epicenterCity) || 1;
-      const dominancePct = Math.round((cityData.count / totalCityArtists) * 100);
-
-      // Sort representative artists by Spotify popularity
-      const repArtists = cityData.artistsList
-        .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
-        .slice(0, 3);
-
-      return {
-        ...genre,
-        epicenterCity,
-        genreCount: cityData.count,
-        dominancePct,
-        repArtists,
-      };
-    });
   }, [artists]);
 
   // Filter and sort cityData for All-Cities Spatial Explorer
@@ -1036,12 +1044,19 @@ export default function HomeOrganism() {
             onArtistClick={setSelectedArtist} 
             onCityClick={handleCitySelect} 
             onProvinceClick={handleProvinceSelect}
+            onDataLoaded={setCityData}
+            onGenresLoaded={setAvailableGenres}
           />
         </div>
       </section>
 
+      {/* ═══════════════════════════════════════════════════════
+          Below-the-fold analytical sections
+          Constrained to max-w-5xl for readability on wide screens
+          ═══════════════════════════════════════════════════════ */}
       <main className="flex-1 w-full max-w-5xl mx-auto px-6 flex flex-col gap-16 py-12">
-        <section id="research-analysis" className="scroll-mt-20 flex flex-col gap-8">
+        {/* Dynamic Showcase based on Active Research Perspective */}
+        <section id="research-analysis" className="scroll-mt-20">
           {isDataLoading ? (
             <GlassCard className="p-6 flex flex-col gap-6" key="skeleton-loading">
               <Skeleton className="h-6 w-1/3 rounded" />
@@ -1049,14 +1064,13 @@ export default function HomeOrganism() {
               <Skeleton className="h-16 w-full rounded" />
             </GlassCard>
           ) : (
-            <>
-              {/* Card 1: Sebaran Geografis (RQ1) */}
+            <div className="flex flex-col gap-8">
               {rq1Stats && (
-                <GlassCard className="p-6 flex flex-col gap-6" id="rq1-sebaran">
+                <GlassCard className="p-6 flex flex-col gap-6">
                   <div>
                     <Text variant="heading" className="font-bold text-white flex items-center gap-2">
                       <MapPin size={20} className="text-teal-400" />
-                      Analisis Geografis: Sebaran & Kepadatan Musisi Populer (RQ1)
+                      Analisis Geografis: Sebaran & Kepadatan Musisi Populer
                     </Text>
                     <Text variant="caption" color="secondary" className="mt-1">
                       Memvisualisasikan hegemoni spasial industri musik Indonesia berdasarkan tingkat kedalaman wilayah (Fokus: {sebaranGranularity === "pulau" ? "Skala Pulau" : sebaranGranularity === "provinsi" ? "Skala Provinsi" : "Skala Perkotaan"}).
@@ -1273,7 +1287,7 @@ export default function HomeOrganism() {
                         </div>
 
                         <div className="bg-teal-500/5 border border-teal-500/10 rounded-xl p-4 flex gap-3 items-start">
-                          <Info size={16} className="text-teal-400 shrink-0 mt-0.5" />
+                          <Info size={16} className="text-teal-400 shrink-0" />
                           <div className="flex flex-col gap-1">
                             <span className="text-xs font-bold text-white">Sinkronisasi Peta</span>
                             <span className="text-[10px] text-white/60 leading-relaxed">
@@ -1341,7 +1355,7 @@ export default function HomeOrganism() {
                           <div className="overflow-y-auto divide-y divide-white/5 custom-scrollbar flex-1">
                             {filteredAndSortedCities.length === 0 ? (
                               <div className="p-8 text-center text-xs text-white/40">
-                                ...
+                                Tidak ada kota yang cocok dengan kata kunci pencarian.
                               </div>
                             ) : (
                               filteredAndSortedCities.map((city, idx) => {
@@ -1404,146 +1418,129 @@ export default function HomeOrganism() {
                 </GlassCard>
               )}
 
-              {/* Card 2: Konsentrasi Genre (RQ2) - Spotlight Cards */}
-              {rq2Stats && (
-                <GlassCard className="p-6 flex flex-col gap-6" id="rq2-genre">
+              {/* RQ2: Konsentrasi Genre (Spotlight Cards) */}
+              {genreSpotlights.length > 0 && (
+                <GlassCard className="p-6 flex flex-col gap-6">
                   <div>
                     <Text variant="heading" className="font-bold text-white flex items-center gap-2">
                       <MusicNote size={20} className="text-sky-400" />
                       Analisis Regional Hubs: Spesialisasi Konsentrasi Genre (RQ2)
                     </Text>
                     <Text variant="caption" color="secondary" className="mt-1">
-                      Mengidentifikasi episentrum spasial budaya (*Scene Capitals*) dan tingkat dominasi lokal untuk masing-masing genre musik utama Indonesia.
+                      Mencari episentrum geografis (Scene Capitals) dan tingkat dominasi lokal untuk masing-masing genre utama Indonesia (Data Absolut).
                     </Text>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                    {spotlightGenreStats.map((genre) => (
+                    {genreSpotlights.map((spotlight) => (
                       <GlassCard
-                        key={genre.key}
-                        className={`p-4 border-white/5 bg-gradient-to-br ${genre.colorClass} ${genre.glowClass} transition-all duration-300 hover:scale-[1.02] flex flex-col gap-4 relative overflow-hidden group`}
+                        key={spotlight.name}
+                        className={`p-4 border-white/5 hover:border-teal-500/20 transition-all flex flex-col gap-4 relative overflow-hidden group bg-gradient-to-br ${spotlight.colorClass} ${spotlight.glowClass}`}
                       >
-                        {/* Card Header: Genre Badge & Count */}
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="flex flex-col min-w-0">
-                            <span 
-                              className="text-[10px] font-bold px-2 py-0.5 rounded border uppercase shrink-0 truncate self-start"
-                              style={{
-                                color: genre.color,
-                                borderColor: `${genre.color}33`,
-                                backgroundColor: `${genre.color}11`,
-                              }}
-                            >
-                              {genre.displayName}
-                            </span>
+                        <div>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/10"
+                              style={{ backgroundColor: spotlight.color }}
+                            />
+                            <Text variant="heading" className="font-bold text-white truncate text-sm">
+                              {spotlight.displayName}
+                            </Text>
                           </div>
-                          <span className="text-[10px] text-white/40 font-mono font-bold uppercase whitespace-nowrap">
-                            {genre.genreCount} Musisi
-                          </span>
+                          <Text variant="caption" color="secondary" className="mt-1 line-clamp-3 text-[11px] leading-relaxed min-h-[50px]">
+                            {spotlight.description}
+                          </Text>
                         </div>
-
-                        {/* Genre Description */}
-                        <p className="text-[11px] text-white/60 leading-relaxed min-h-[44px]">
-                          {genre.description}
-                        </p>
 
                         <Divider className="my-0 opacity-20" />
 
-                        {/* Epicenter Metric */}
-                        <div className="flex flex-col gap-1 bg-black/20 p-2.5 rounded-lg border border-white/5 relative group/metric">
-                          <div className="flex justify-between items-center text-[10px] text-white/50 uppercase tracking-wider font-bold">
-                            <span className="flex items-center gap-1">
-                              <MapPin size={10} className="text-white/40" />
-                              Episentrum Spasial
-                            </span>
-                            
-                            {/* Tooltip */}
-                            <div className="relative group/tooltip">
-                              <Question size={12} className="text-white/30 hover:text-white cursor-help transition-colors" />
-                              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left normal-case tracking-normal font-normal">
-                                <div className="text-[11px] font-bold text-teal-400 mb-1">Episentrum Spasial (Scene Capital)</div>
-                                <div className="text-[10px] text-white/80 leading-relaxed">
-                                  Kota dengan konsentrasi jumlah musisi genre ini tertinggi di seluruh Indonesia. Ini mencerminkan pusat aktivitas komunitas dan industri genre tersebut.
+                        {/* Episentrum Spasial (Scene Capital) */}
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center justify-between text-[10px] text-white/50 uppercase tracking-wider font-bold">
+                            <div className="relative flex items-center gap-1 group/tooltip">
+                              <span>Episentrum Spasial</span>
+                              <Question size={12} className="text-white/40 hover:text-white cursor-help transition-colors" />
+                              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-72 p-3.5 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left normal-case">
+                                <div className="text-xs font-bold text-sky-400 mb-1">Episentrum Spasial (Scene Capital)</div>
+                                <div className="text-[11px] text-white/80 leading-relaxed font-normal">
+                                  Kota di Indonesia dengan konsentrasi jumlah musisi genre ini terbanyak secara nasional. Menunjukkan pusat aktivitas komunitas dan industri genre tersebut.
                                 </div>
                               </div>
                             </div>
+                            <span className="text-white font-mono font-semibold">{spotlight.genreCount} Musisi</span>
                           </div>
-                          <span className="text-sm font-bold text-white mt-1 flex items-center gap-1">
-                            {genre.epicenterCity}
-                          </span>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <MapPin size={14} className="text-teal-400 shrink-0" />
+                            <span className="text-sm font-bold text-white truncate">{spotlight.epicenter}</span>
+                          </div>
                         </div>
 
-                        {/* Dominance Metric */}
-                        <div className="flex flex-col gap-1.5 bg-black/20 p-2.5 rounded-lg border border-white/5 relative group/metric">
-                          <div className="flex justify-between items-center text-[10px] text-white/50 uppercase tracking-wider font-bold">
-                            <span>Dominansi Lokal</span>
-                            
-                            {/* Tooltip */}
-                            <div className="relative group/tooltip">
-                              <Question size={12} className="text-white/30 hover:text-white cursor-help transition-colors" />
-                              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left normal-case tracking-normal font-normal">
-                                <div className="text-[11px] font-bold text-teal-400 mb-1">Dominansi Lokal (%)</div>
-                                <div className="text-[10px] text-teal-400/90 font-mono mb-1.5">Formula: (Musisi Genre di Kota / Total Musisi Kota) × 100%</div>
-                                <div className="text-[10px] text-white/80 leading-relaxed">
-                                  Persentase musisi genre ini terhadap total populasi musisi di kota tersebut. Nilai tinggi menunjukkan spesialisasi genre yang mendalam di ekosistem musik lokal kota terkait.
+                        {/* Dominansi Lokal */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between text-[10px] text-white/50 uppercase tracking-wider font-bold">
+                            <div className="relative flex items-center gap-1 group/tooltip flex-nowrap shrink-0 pr-1">
+                              <span>Dominansi Lokal</span>
+                              <Question size={12} className="text-white/40 hover:text-white cursor-help transition-colors" />
+                              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-72 p-3.5 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left normal-case">
+                                <div className="text-xs font-bold text-teal-400 mb-1">Dominansi Lokal (%)</div>
+                                <div className="text-[11px] text-white/80 leading-relaxed font-normal">
+                                  Persentase musisi genre ini dibanding total musisi yang ada di kota episentrum tersebut. Rasio tinggi menunjukkan spesialisasi genre yang mendalam di ekosistem lokal kota.
                                 </div>
                               </div>
                             </div>
+                            <span className="text-teal-400 font-bold font-mono text-xs">{spotlight.dominancePct}%</span>
                           </div>
-                          
-                          <div className="flex items-center justify-between text-xs font-bold text-white mt-0.5">
-                            <span className="text-teal-400 font-mono">{genre.dominancePct}%</span>
-                            <span className="text-[9px] text-white/30 font-normal">dari kota</span>
-                          </div>
-                          
-                          {/* Bar indicator */}
-                          <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                          <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
                             <div
-                              className="h-full bg-teal-500 rounded-full transition-all duration-500"
-                              style={{ width: `${genre.dominancePct}%` }}
+                              className="h-full rounded-full"
+                              style={{ width: `${spotlight.dominancePct}%`, backgroundColor: spotlight.color }}
                             />
                           </div>
                         </div>
 
-                        {/* Representative Artists List */}
-                        <div className="flex flex-col gap-2">
-                          <div className="flex justify-between items-center text-[9px] text-white/40 uppercase tracking-wider font-bold">
-                            <span>Musisi Representatif</span>
-                            
-                            {/* Tooltip */}
-                            <div className="relative group/tooltip">
-                              <Question size={12} className="text-white/30 hover:text-white cursor-help transition-colors" />
-                              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left normal-case tracking-normal font-normal">
-                                <div className="text-[11px] font-bold text-teal-400 mb-1">Musisi Representatif</div>
-                                <div className="text-[10px] text-white/80 leading-relaxed">
-                                  Tiga musisi terpopuler asal kota episentrum tersebut berdasarkan Spotify Popularity. Klik salah satu musisi untuk membuka profil lengkapnya di Drawer.
-                                </div>
+                        {/* Representative Artists */}
+                        <div className="flex flex-col gap-1.5 mt-auto">
+                          <div className="relative flex items-center gap-1 group/tooltip">
+                            <span className="text-[9px] text-white/40 uppercase tracking-wider font-bold">Representative Artists</span>
+                            <Question size={12} className="text-white/40 hover:text-white cursor-help transition-colors" />
+                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-72 p-3.5 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left normal-case">
+                              <div className="text-xs font-bold text-violet-400 mb-1">Musisi Representatif</div>
+                              <div className="text-[11px] text-white/80 leading-relaxed font-normal">
+                                Tiga musisi terpopuler asal kota episentrum tersebut berdasarkan Spotify Popularity. Klik salah satu untuk membuka profil lengkapnya.
                               </div>
                             </div>
                           </div>
-
-                          <div className="flex flex-col gap-1.5">
-                            {genre.repArtists.map((art: any) => (
+                          <div className="flex items-center gap-2">
+                            {spotlight.repArtists.map((art) => (
                               <button
                                 key={art.name}
-                                onClick={() => setSelectedArtist(art)}
-                                className="flex items-center gap-2 p-1.5 rounded bg-white/2 hover:bg-white/5 border border-white/5 hover:border-white/10 transition-all text-left group/btn cursor-pointer"
+                                onClick={() => {
+                                  const artistData: ArtistData = {
+                                    name: art.name,
+                                    profilePicture: art.profilePicture,
+                                    originCity: art.originCity,
+                                    province: art.originProvince,
+                                    popularity: art.popularity,
+                                    followers: art.followers,
+                                    genres: art.genres,
+                                    primaryGenre: art.primaryGenre,
+                                    artistType: art.artistType
+                                  };
+                                  setSelectedArtist(artistData);
+                                }}
+                                className="group/avatar flex items-center justify-center relative size-8 rounded-full border border-white/10 overflow-hidden cursor-pointer hover:border-white/40 transition-colors"
+                                title={`${art.name} (Popularitas: ${art.popularity})`}
                               >
                                 <img
-                                  src={art.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=40&q=80"}
+                                  src={art.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&q=80"}
                                   alt={art.name}
-                                  className="size-6 rounded-full border border-white/10 object-cover"
+                                  className="size-full object-cover group-hover/avatar:scale-110 transition-transform duration-200"
                                 />
-                                <div className="flex flex-col min-w-0 flex-1">
-                                  <span className="text-[10px] font-bold text-white group-hover/btn:text-teal-400 transition-colors truncate">
-                                    {art.name}
-                                  </span>
-                                  <span className="text-[8px] text-white/40 font-mono">
-                                    Pop: {art.popularity}
-                                  </span>
-                                </div>
                               </button>
                             ))}
+                            {spotlight.repArtists.length === 0 && (
+                              <span className="text-[10px] text-white/30 italic">Tidak ada musisi</span>
+                            )}
                           </div>
                         </div>
                       </GlassCard>
@@ -1552,13 +1549,13 @@ export default function HomeOrganism() {
                 </GlassCard>
               )}
 
-              {/* Card 3: Aksesibilitas Spasial (RQ3) */}
+              {/* RQ3: Aksesibilitas Spasial */}
               {rq3Stats && (
-                <GlassCard className="p-6 flex flex-col gap-6" id="rq3-aksesibilitas">
+                <GlassCard className="p-6 flex flex-col gap-6">
                   <div>
                     <Text variant="heading" className="font-bold text-white flex items-center gap-2">
                       <ChartBar size={20} className="text-rose-400" />
-                      Analisis Aksesibilitas: Kesenjangan Popularitas Regional (RQ3)
+                      Analisis Aksesibilitas: Kesenjangan Popularitas Regional
                     </Text>
                     <Text variant="caption" color="secondary" className="mt-1">
                       Membandingkan rata-rata jangkauan popularitas musisi berdasarkan kluster lokasi untuk menguji hambatan industri.
@@ -1632,21 +1629,13 @@ export default function HomeOrganism() {
                   <div className="flex gap-2 items-center bg-teal-500/5 border border-teal-500/10 p-3.5 rounded-lg text-xs leading-relaxed text-(--color-text-secondary)">
                     <Info size={16} className="text-teal-400 shrink-0" />
                     <span>
-                      💡 <strong>Analisis RQ3</strong>: Jarak geografis terbukti berkolerasi dengan popularitas digital. Rata-rata popularitas di Jakarta (<strong>{rq3Stats.jakarta.avgPopularity}</strong>) meluncur turun pada wilayah penyangga Jawa (<strong>{rq3Stats.javaRest.avgPopularity}</strong>) dan berada di level terendah pada musisi luar Jawa (<strong>{rq3Stats.outsideJava.avgPopularity}</strong>). Kesenjangan popularitas mencapai <strong>{Math.abs(rq3Stats.jakarta.avgPopularity - rq3Stats.outsideJava.avgPopularity)} poin</strong>.
+                      💡 <strong>Analisis RQ3</strong>: Jarak geografis terbukti berkolerasi dengan popularitas digital. Rata-rata popularitas di Jakarta (<strong>{rq3Stats.jakarta.avgPopularity}</strong>) meluncur turun pada wilayah penyangga Jawa (<strong>{rq3Stats.javaRest.avgPopularity}</strong>) and berada di level terendah pada musisi luar Jawa (<strong>{rq3Stats.outsideJava.avgPopularity}</strong>). Kesenjangan popularitas mencapai <strong>{Math.abs(rq3Stats.jakarta.avgPopularity - rq3Stats.outsideJava.avgPopularity)} poin</strong>.
                     </span>
                   </div>
                 </GlassCard>
               )}
-            </>
+            </div>
           )}
-        </section>rbukti berkolerasi dengan popularitas digital. Rata-rata popularitas di Jakarta (<strong>{rq3Stats.jakarta.avgPopularity}</strong>) meluncur turun pada wilayah penyangga Jawa (<strong>{rq3Stats.javaRest.avgPopularity}</strong>) dan berada di level terendah pada musisi luar Jawa (<strong>{rq3Stats.outsideJava.avgPopularity}</strong>). Kesenjangan popularitas mencapai <strong>{Math.abs(rq3Stats.jakarta.avgPopularity - rq3Stats.outsideJava.avgPopularity)} poin</strong>.
-                      </span>
-                    </div>
-                  </GlassCard>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </section>
 
         {/* Section 1.5: Database Explorer Directory */}
