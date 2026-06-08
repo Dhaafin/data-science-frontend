@@ -1542,132 +1542,144 @@ export default function HomeOrganism() {
                     </Text>
                   </div>
 
-                  <div className="flex flex-col gap-3">
-                    {(showAllGenres ? genreSpotlights : genreSpotlights.slice(0, 5)).map((spotlight) => (
-                      <GlassCard
-                        key={spotlight.name}
-                        className={`p-4 border-white/5 hover:border-teal-500/20 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden group bg-gradient-to-r ${spotlight.colorClass} ${spotlight.glowClass}`}
-                      >
-                        {/* 1. Genre Title & Description */}
-                        <div className="flex-1 min-w-0 md:pr-4">
-                          <div className="flex items-center gap-2 min-w-0 mb-1">
-                            <span
-                              className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/10"
-                              style={{ backgroundColor: spotlight.color }}
-                            />
-                            <Text variant="heading" className="font-bold text-white truncate text-sm">
-                              {spotlight.displayName}
-                            </Text>
-                          </div>
-                          <Text variant="caption" color="secondary" className="line-clamp-2 text-[11px] leading-relaxed">
-                            {spotlight.description}
-                          </Text>
-                        </div>
+                  <div className="flex flex-col">
+                    <AnimatePresence initial={false}>
+                      {(showAllGenres ? genreSpotlights : genreSpotlights.slice(0, 5)).map((spotlight) => (
+                        <motion.div
+                          key={spotlight.name}
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                          style={{ overflow: "hidden" }}
+                        >
+                          <div className="pb-3">
+                            <GlassCard
+                              className={`p-4 border-white/5 hover:border-teal-500/20 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden group bg-gradient-to-r ${spotlight.colorClass} ${spotlight.glowClass}`}
+                            >
+                              {/* 1. Genre Title & Description */}
+                              <div className="flex-1 min-w-0 md:pr-4">
+                                <div className="flex items-center gap-2 min-w-0 mb-1">
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/10"
+                                    style={{ backgroundColor: spotlight.color }}
+                                  />
+                                  <Text variant="heading" className="font-bold text-white truncate text-sm">
+                                    {spotlight.displayName}
+                                  </Text>
+                                </div>
+                                <Text variant="caption" color="secondary" className="line-clamp-2 text-[11px] leading-relaxed">
+                                  {spotlight.description}
+                                </Text>
+                              </div>
 
-                        {/* 2. Episentrum Spasial (Scene Capital) */}
-                        <div className="w-full md:w-48 shrink-0 flex flex-col justify-center gap-0.5">
-                          <div className="flex items-center gap-1 text-[10px] text-white/50 uppercase tracking-wider font-bold">
-                            <span>Episentrum Spasial</span>
-                            <Question
-                              size={12}
-                              className="text-white/40 hover:text-white cursor-help transition-colors"
-                              onMouseEnter={(e) => handleMouseEnterTooltip(
-                                e,
-                                "Episentrum Spasial (Scene Capital)",
-                                "Kota di Indonesia dengan konsentrasi jumlah musisi genre ini terbanyak secara nasional. Menunjukkan pusat aktivitas komunitas dan industri genre tersebut."
-                              )}
-                              onMouseLeave={handleMouseLeaveTooltip}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between mt-1">
-                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                              <MapPin size={14} className="text-teal-400 shrink-0" />
-                              <span className="text-xs font-bold text-white truncate">{spotlight.epicenter}</span>
-                            </div>
-                            <span className="text-[10px] text-white/40 font-mono font-semibold shrink-0 ml-2">
-                              {spotlight.genreCount} Musisi
-                            </span>
-                          </div>
-                        </div>
+                              {/* 2. Episentrum Spasial (Scene Capital) */}
+                              <div className="w-full md:w-48 shrink-0 flex flex-col justify-center gap-0.5">
+                                <div className="flex items-center gap-1 text-[10px] text-white/50 uppercase tracking-wider font-bold">
+                                  <span>Episentrum Spasial</span>
+                                  <Question
+                                    size={12}
+                                    className="text-white/40 hover:text-white cursor-help transition-colors"
+                                    onMouseEnter={(e) => handleMouseEnterTooltip(
+                                      e,
+                                      "Episentrum Spasial (Scene Capital)",
+                                      "Kota di Indonesia dengan konsentrasi jumlah musisi genre ini terbanyak secara nasional. Menunjukkan pusat aktivitas komunitas dan industri genre tersebut."
+                                    )}
+                                    onMouseLeave={handleMouseLeaveTooltip}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between mt-1">
+                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                    <MapPin size={14} className="text-teal-400 shrink-0" />
+                                    <span className="text-xs font-bold text-white truncate">{spotlight.epicenter}</span>
+                                  </div>
+                                  <span className="text-[10px] text-white/40 font-mono font-semibold shrink-0 ml-2">
+                                    {spotlight.genreCount} Musisi
+                                  </span>
+                                </div>
+                              </div>
 
-                        {/* 3. Dominansi Lokal */}
-                        <div className="w-full md:w-48 shrink-0 flex flex-col justify-center gap-1">
-                          <div className="flex items-center gap-1 text-[10px] text-white/50 uppercase tracking-wider font-bold">
-                            <span>Dominansi Lokal</span>
-                            <Question
-                              size={12}
-                              className="text-white/40 hover:text-white cursor-help transition-colors"
-                              onMouseEnter={(e) => handleMouseEnterTooltip(
-                                e,
-                                "Dominansi Lokal (%)",
-                                "Persentase musisi genre ini dibanding total musisi yang ada di kota episentrum tersebut. Rasio tinggi menunjukkan spesialisasi genre yang mendalam di ekosistem lokal kota."
-                              )}
-                              onMouseLeave={handleMouseLeaveTooltip}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between mt-1.5">
-                            <div className="h-1.5 flex-1 bg-white/5 rounded-full overflow-hidden border border-white/5 mr-3">
-                              <div
-                                className="h-full rounded-full"
-                                style={{ width: `${spotlight.dominancePct}%`, backgroundColor: spotlight.color }}
-                              />
-                            </div>
-                            <span className="text-teal-400 font-bold font-mono text-[10px] shrink-0">
-                              {spotlight.dominancePct}%
-                            </span>
-                          </div>
-                        </div>
+                              {/* 3. Dominansi Lokal */}
+                              <div className="w-full md:w-48 shrink-0 flex flex-col justify-center gap-1">
+                                <div className="flex items-center gap-1 text-[10px] text-white/50 uppercase tracking-wider font-bold">
+                                  <span>Dominansi Lokal</span>
+                                  <Question
+                                    size={12}
+                                    className="text-white/40 hover:text-white cursor-help transition-colors"
+                                    onMouseEnter={(e) => handleMouseEnterTooltip(
+                                      e,
+                                      "Dominansi Lokal (%)",
+                                      "Persentase musisi genre ini dibanding total musisi yang ada di kota episentrum tersebut. Rasio tinggi menunjukkan spesialisasi genre yang mendalam di ekosistem lokal kota."
+                                    )}
+                                    onMouseLeave={handleMouseLeaveTooltip}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between mt-1.5">
+                                  <div className="h-1.5 flex-1 bg-white/5 rounded-full overflow-hidden border border-white/5 mr-3">
+                                    <div
+                                      className="h-full rounded-full"
+                                      style={{ width: `${spotlight.dominancePct}%`, backgroundColor: spotlight.color }}
+                                    />
+                                  </div>
+                                  <span className="text-teal-400 font-bold font-mono text-[10px] shrink-0">
+                                    {spotlight.dominancePct}%
+                                  </span>
+                                </div>
+                              </div>
 
-                        {/* 4. Representative Artists */}
-                        <div className="w-full md:w-44 shrink-0 flex flex-col justify-center gap-1">
-                          <div className="flex items-center gap-1 text-[9px] text-white/40 uppercase tracking-wider font-bold">
-                            <span>Representative Artists</span>
-                            <Question
-                              size={12}
-                              className="text-white/40 hover:text-white cursor-help transition-colors"
-                              onMouseEnter={(e) => handleMouseEnterTooltip(
-                                  e,
-                                  "Musisi Representatif",
-                                  "Tiga musisi terpopuler asal kota episentrum tersebut berdasarkan Spotify Popularity. Klik salah satu untuk membuka profil lengkapnya."
-                                )}
-                              onMouseLeave={handleMouseLeaveTooltip}
-                            />
+                              {/* 4. Representative Artists */}
+                              <div className="w-full md:w-44 shrink-0 flex flex-col justify-center gap-1">
+                                <div className="flex items-center gap-1 text-[9px] text-white/40 uppercase tracking-wider font-bold">
+                                  <span>Representative Artists</span>
+                                  <Question
+                                    size={12}
+                                    className="text-white/40 hover:text-white cursor-help transition-colors"
+                                    onMouseEnter={(e) => handleMouseEnterTooltip(
+                                        e,
+                                        "Musisi Representatif",
+                                        "Tiga musisi terpopuler asal kota episentrum tersebut berdasarkan Spotify Popularity. Klik salah satu untuk membuka profil lengkapnya."
+                                      )}
+                                    onMouseLeave={handleMouseLeaveTooltip}
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  {spotlight.repArtists.map((art) => (
+                                    <button
+                                      key={art.name}
+                                      onClick={() => {
+                                        const artistData: ArtistData = {
+                                          name: art.name,
+                                          profilePicture: art.profilePicture,
+                                          originCity: art.originCity,
+                                          province: art.originProvince,
+                                          popularity: art.popularity,
+                                          followers: art.followers,
+                                          genres: art.genres,
+                                          primaryGenre: art.primaryGenre,
+                                          artistType: art.artistType
+                                        };
+                                        setSelectedArtist(artistData);
+                                      }}
+                                      className="group/avatar flex items-center justify-center relative size-8 rounded-full border border-white/10 overflow-hidden cursor-pointer hover:border-white/40 transition-colors"
+                                      title={`${art.name} (Popularitas: ${art.popularity})`}
+                                    >
+                                      <img
+                                        src={art.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&q=80"}
+                                        alt={art.name}
+                                        className="size-full object-cover group-hover/avatar:scale-110 transition-transform duration-200"
+                                      />
+                                    </button>
+                                  ))}
+                                  {spotlight.repArtists.length === 0 && (
+                                    <span className="text-[10px] text-white/30 italic">Tidak ada musisi</span>
+                                  )}
+                                </div>
+                              </div>
+                            </GlassCard>
                           </div>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            {spotlight.repArtists.map((art) => (
-                              <button
-                                key={art.name}
-                                onClick={() => {
-                                  const artistData: ArtistData = {
-                                    name: art.name,
-                                    profilePicture: art.profilePicture,
-                                    originCity: art.originCity,
-                                    province: art.originProvince,
-                                    popularity: art.popularity,
-                                    followers: art.followers,
-                                    genres: art.genres,
-                                    primaryGenre: art.primaryGenre,
-                                    artistType: art.artistType
-                                  };
-                                  setSelectedArtist(artistData);
-                                }}
-                                className="group/avatar flex items-center justify-center relative size-8 rounded-full border border-white/10 overflow-hidden cursor-pointer hover:border-white/40 transition-colors"
-                                title={`${art.name} (Popularitas: ${art.popularity})`}
-                              >
-                                <img
-                                  src={art.profilePicture || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&q=80"}
-                                  alt={art.name}
-                                  className="size-full object-cover group-hover/avatar:scale-110 transition-transform duration-200"
-                                />
-                              </button>
-                            ))}
-                            {spotlight.repArtists.length === 0 && (
-                              <span className="text-[10px] text-white/30 italic">Tidak ada musisi</span>
-                            )}
-                          </div>
-                        </div>
-                      </GlassCard>
-                    ))}
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
 
                     {genreSpotlights.length > 5 && (
                       <button
