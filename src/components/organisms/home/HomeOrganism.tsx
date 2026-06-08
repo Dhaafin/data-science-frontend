@@ -10,6 +10,7 @@ import {
   ArtistDrawer,
   MapPlaceholder,
   DatabaseExplorer,
+  ResearchQuestionsShowcase,
   Drawer,
   Footer,
 } from "@/components/organisms";
@@ -296,6 +297,11 @@ export default function HomeOrganism() {
           Constrained to max-w-5xl for readability on wide screens
           ═══════════════════════════════════════════════════════ */}
       <main className="flex-1 w-full max-w-5xl mx-auto px-6 flex flex-col gap-16 py-12">
+        {/* Section: Research Questions Analysis Hub */}
+        <section id="research" className="scroll-mt-20">
+          <ResearchQuestionsShowcase />
+        </section>
+
         {/* Section 1.5: Database Explorer Directory */}
         <section id="explore" className="scroll-mt-20">
           <DatabaseExplorer onArtistSelect={setSelectedArtist} />
