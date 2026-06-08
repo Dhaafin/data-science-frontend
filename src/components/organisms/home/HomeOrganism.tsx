@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, CircleNotch, MapPin, MusicNote, ChartBar, Globe, Warning, Info, MagnifyingGlass, ArrowsDownUp } from "@phosphor-icons/react";
+import { ArrowUp, CircleNotch, MapPin, MusicNote, ChartBar, Globe, Warning, Info, MagnifyingGlass, ArrowsDownUp, Question } from "@phosphor-icons/react";
 import { musicService, StickinessArtistEntry } from "@/lib/api/musicService";
 import {
   Header,
@@ -1081,7 +1081,17 @@ export default function HomeOrganism() {
                             {/* Jakarta Centralization Index */}
                             <div className="flex flex-col gap-1.5">
                               <div className="flex justify-between items-center text-xs">
-                                <span className="text-white/70 text-[11px]">Jakarta Centralization (JCI)</span>
+                                <div className="relative flex items-center gap-1 group/tooltip">
+                                  <span className="text-white/70 text-[11px] cursor-help">Jakarta Centralization (JCI)</span>
+                                  <Question size={13} className="text-white/40 hover:text-white cursor-help transition-colors" />
+                                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
+                                    <div className="text-[10px] font-bold text-teal-400 mb-1">Jakarta Centralization Index (JCI)</div>
+                                    <div className="text-[9px] text-teal-400/90 font-mono mb-1.5">Formula: (Musisi Jkt / Total Musisi) × 100%</div>
+                                    <div className="text-[9px] text-white/70 leading-normal font-normal">
+                                      Mengukur konsentrasi talenta di ibu kota. Indeks tinggi menunjukkan struktur pasar yang Jakarta-sentris, mencerminkan ketimpangan akses infrastruktur industri musik di daerah lain.
+                                    </div>
+                                  </div>
+                                </div>
                                 <span className="font-bold text-teal-400">{rq1Stats.jci}%</span>
                               </div>
                               <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
@@ -1100,7 +1110,17 @@ export default function HomeOrganism() {
                             {/* Java Dominance Ratio (Followers) */}
                             <div className="flex flex-col gap-1.5">
                               <div className="flex justify-between items-center text-xs">
-                                <span className="text-white/70 text-[11px]">Java Dominance Ratio (JDR)</span>
+                                <div className="relative flex items-center gap-1 group/tooltip">
+                                  <span className="text-white/70 text-[11px] cursor-help">Java Dominance Ratio (JDR)</span>
+                                  <Question size={13} className="text-white/40 hover:text-white cursor-help transition-colors" />
+                                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
+                                    <div className="text-[10px] font-bold text-sky-400 mb-1">Java Dominance Ratio (JDR)</div>
+                                    <div className="text-[9px] text-sky-400/90 font-mono mb-1.5">Formula: (Followers Jawa / Total Followers) × 100%</div>
+                                    <div className="text-[9px] text-white/70 leading-normal font-normal">
+                                      Mengukur dominasi komersial musisi asal Jawa dalam menggaet pangsa pengikut digital nasional. Rasio tinggi menyoroti hegemoni pasar pendengar yang timpang di luar Jawa.
+                                    </div>
+                                  </div>
+                                </div>
                                 <span className="font-bold text-sky-400">{rq1Stats.javaFollowersPct}%</span>
                               </div>
                               <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
@@ -1119,7 +1139,17 @@ export default function HomeOrganism() {
                             {/* Outer-Java Popularity Gap */}
                             <div className="flex flex-col gap-1.5">
                               <div className="flex justify-between items-center text-xs">
-                                <span className="text-white/70 text-[11px]">Outer-Java Popularity Gap</span>
+                                <div className="relative flex items-center gap-1 group/tooltip">
+                                  <span className="text-white/70 text-[11px] cursor-help">Outer-Java Popularity Gap</span>
+                                  <Question size={13} className="text-white/40 hover:text-white cursor-help transition-colors" />
+                                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-[#121212]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none text-left">
+                                    <div className="text-[10px] font-bold text-rose-400 mb-1">Outer-Java Popularity Gap</div>
+                                    <div className="text-[9px] text-rose-400/90 font-mono mb-1.5">Formula: |Rerata Pop Jawa - Rerata Pop Luar Jawa|</div>
+                                    <div className="text-[9px] text-white/70 leading-normal font-normal">
+                                      Selisih rata-rata skor popularitas musisi di Pulau Jawa vs Luar Jawa. Kesenjangan tinggi menunjukkan musisi luar Jawa menghadapi hambatan eksposur yang signifikan.
+                                    </div>
+                                  </div>
+                                </div>
                                 <span className="font-bold text-rose-400">{rq1Stats.popGap} Poin</span>
                               </div>
                               <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
