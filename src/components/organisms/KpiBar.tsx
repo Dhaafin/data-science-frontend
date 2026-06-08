@@ -11,7 +11,7 @@ import {
   Warning,
 } from "@phosphor-icons/react";
 import { KpiCard } from "@/components/molecules/KpiCard";
-import { GENRE_GROUPS } from "@/components/organisms/InteractiveMap";
+import { GENRE_GROUPS } from "@/lib/config/genreGroups";
 
 export type ResearchPerspective = "sebaran" | "genre" | "aksesibilitas";
 
