@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { staggerContainer, fadeUp } from "@/lib/motion";
 import {
@@ -16,6 +16,7 @@ import {
 import { Text, GlassCard, Badge } from "@/components/atoms";
 import { Pagination, Dropdown } from "@/components/molecules";
 import { musicService } from "@/lib/api/musicService";
+import { GENRE_GROUPS } from "@/lib/config/genreGroups";
 import type { ArtistData } from "./ArtistDrawer";
 
 /**
@@ -80,6 +81,8 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("Semua");
   const [formatFilter, setFormatFilter] = useState("Semua");
+  const [primaryGenreFilter, setPrimaryGenreFilter] = useState("Semua");
+  const [tagFilter, setTagFilter] = useState("Semua");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,6 +97,35 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
     ? TOP_FILTERS
     : [...TOP_FILTERS, activeFilter];
 
+  const primaryGenreOptions = useMemo(() => {
+    return [
+      { label: "Semua Genre Utama", value: "Semua" },
+      ...GENRE_GROUPS.map((g) => ({
+        label: g.name,
+        value: g.name,
+      })),
+    ];
+  }, []);
+
+  const tagOptions = useMemo(() => {
+    const subgenres = Array.from(
+      new Set(GENRE_GROUPS.flatMap((g) => g.subgenres))
+    ).sort();
+    return [
+      { label: "Semua Tag (Subgenre)", value: "Semua" },
+      ...subgenres.map((tag) => {
+        const capitalized = tag
+          .split(" ")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+        return {
+          label: capitalized,
+          value: tag,
+        };
+      }),
+    ];
+  }, []);
+
   // 1. Debounce the text search query (delays network request by 300ms while typing)
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -105,7 +137,7 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
   // 2. Reset to page 1 on active filter, text query, or format filter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchQuery, activeFilter, formatFilter]);
+  }, [debouncedSearchQuery, activeFilter, formatFilter, primaryGenreFilter, tagFilter]);
 
   // 3. Data fetching callback targeting the debounced value
   const fetchData = useCallback(async () => {
@@ -117,6 +149,8 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
         currentPage,
         PAGE_SIZE,
         formatFilter,
+        primaryGenreFilter,
+        tagFilter,
       );
       setArtists(res.data);
       setTotalCount(res.count);
@@ -125,7 +159,7 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearchQuery, activeFilter, currentPage, formatFilter]);
+  }, [debouncedSearchQuery, activeFilter, currentPage, formatFilter, primaryGenreFilter, tagFilter]);
 
   // 4. Instantly trigger fetch on parameter updates
   useEffect(() => {
@@ -158,9 +192,9 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
       </motion.div>
 
       {/* ── Search & Filter Controls ── */}
-      <motion.div variants={fadeUp} className="flex flex-col gap-4">
-        {/* Search Bar & Format Dropdown */}
-        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-3xl">
+      <motion.div variants={fadeUp} className="flex flex-col gap-3 w-full max-w-3xl">
+        {/* Row 1: Search Bar & Format Dropdown */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
           <div className="relative flex-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <MagnifyingGlass
@@ -185,13 +219,55 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
           />
         </div>
 
+        {/* Row 2: Primary Genre Dropdown, Tag Dropdown & Reset Filters */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full items-stretch sm:items-center">
+          <div className="flex-1 flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <Dropdown
+                options={primaryGenreOptions}
+                value={primaryGenreFilter}
+                onChange={setPrimaryGenreFilter}
+                className="w-full"
+              />
+            </div>
+            <div className="flex-1">
+              <Dropdown
+                options={tagOptions}
+                value={tagFilter}
+                onChange={setTagFilter}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          {(primaryGenreFilter !== "Semua" || tagFilter !== "Semua" || formatFilter !== "Semua" || activeFilter !== "Semua" || searchQuery !== "") && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setFormatFilter("Semua");
+                setPrimaryGenreFilter("Semua");
+                setTagFilter("Semua");
+                setActiveFilter("Semua");
+              }}
+              className="px-4 py-2.5 rounded-lg border border-red-500/20 bg-red-500/5 text-xs font-semibold text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 font-medium"
+            >
+              <X size={14} weight="bold" />
+              Reset Filters
+            </button>
+          )}
+        </div>
+
         {/* Quick Filters */}
         <div className="flex flex-wrap items-center gap-2">
           <Funnel size={16} className="text-(--color-text-secondary) mr-1" />
           {visibleFilters.map((filter) => (
             <button
               key={filter}
-              onClick={() => setActiveFilter(filter)}
+              onClick={() => {
+                setActiveFilter(filter);
+                setPrimaryGenreFilter("Semua");
+                setTagFilter("Semua");
+              }}
               className={[
                 "px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer border",
                 activeFilter === filter
@@ -360,16 +436,33 @@ export function DatabaseExplorer({ onArtistSelect }: DatabaseExplorerProps) {
                     </Text>
                   </div>
 
-                  {/* Genre Column */}
-                  <div className="col-span-3 lg:col-span-4 hidden md:flex items-center gap-1.5 flex-wrap">
-                    {artist.primaryGenre ? (
-                      <Badge color="info">
-                        {artist.primaryGenre}
-                      </Badge>
-                    ) : (
-                      <Text variant="caption" color="muted">
-                        —
-                      </Text>
+                  {/* Genre & Tags Column */}
+                  <div className="col-span-3 lg:col-span-4 hidden md:flex flex-col gap-1 pr-2 align-start justify-center">
+                    <div className="flex flex-wrap items-center gap-1">
+                      {artist.primaryGenre ? (
+                        <Badge color="info" className="text-[10px] uppercase font-bold py-0.5">
+                          {artist.primaryGenre}
+                        </Badge>
+                      ) : (
+                        <span className="text-[10px] text-white/30 italic">No Genre</span>
+                      )}
+                    </div>
+                    {artist.genres && artist.genres.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1">
+                        {artist.genres.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-[9px] px-1.5 py-0.2 bg-white/5 border border-white/10 rounded text-white/60 uppercase tracking-tight font-medium"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {artist.genres.length > 3 && (
+                          <span className="text-[8px] text-white/40 font-semibold shrink-0">
+                            +{artist.genres.length - 3}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
 

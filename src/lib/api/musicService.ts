@@ -141,6 +141,8 @@ export const musicService = {
     page: number = 1,
     pageSize: number = 10,
     artistType: string = "Semua",
+    primaryGenre: string = "Semua",
+    tag: string = "Semua",
   ): Promise<PaginatedResult<ArtistData>> {
     let url = `/music_data?order=popularity.desc.nullslast`;
     const filters: string[] = [];
@@ -169,7 +171,19 @@ export const musicService = {
       }
     }
 
-    // 3. Format/Artist Type Filter (Soloist vs. Band)
+    // 3. Primary Genre Filter
+    if (primaryGenre !== "Semua") {
+      const f = encodeURIComponent(primaryGenre);
+      filters.push(`primary_genre=eq.${f}`);
+    }
+
+    // 4. Tag Filter
+    if (tag !== "Semua") {
+      const val = encodeURIComponent(`{${tag.toLowerCase().trim()}}`);
+      filters.push(`genre=cs.${val}`);
+    }
+
+    // 5. Format/Artist Type Filter (Soloist vs. Band)
     if (artistType !== "Semua") {
       if (artistType === "Soloist") {
         filters.push("artist_type=eq.Person");
